@@ -6,7 +6,6 @@ Created on Tue Nov 30 15:30:00 2021
 """
 
 import numpy as np
-import random 
 
 # Global Constants
 MINIMUM_SPD = 0
@@ -34,10 +33,11 @@ Probability_of_light_rain_fall = 0.43
 Probability_of_medium_rain_fall = 0.13
 
 Probability_of_accidents = 0.02
+
 Probability_of_light_traffic = 0.10
-Probabllity_of_medium_traffic = 0.50
-Probability_of_heavy_traffic = 0.80
-Probability_of_no_traffic = 0.01
+Probabllity_of_medium_traffic = 0.80
+
+List_of_times = []
 
 def simulation():
     
@@ -48,12 +48,12 @@ def simulation():
     
     Time_Elapsed = 0
     
-    random_chance_of_rain = np.random.uniform(Probability_of_rain_min, Probability_of_rain_max)    
+    count = 0
+    
+    random_chance_of_rain = np.random.uniform(Probability_of_rain_min, Probability_of_rain_max)
+    
     # Run the simulation until Duy reaches Exit 23
     while Exit_Number != ENDING_POINT:
-        
-        # Run the probability of rain
-        rand = np.random.random()
         
         rand_traffic = np.random.random();
                 
@@ -62,16 +62,25 @@ def simulation():
             if  rand_traffic < Probability_of_light_traffic:
                 Speed_Counter = np.random.randint(50,60)
             #if car is in medium traffic, speed is from 10 to 30 mph
-            elif rand_traffic < Probabllity_of_medium_traffic:
-                Speed_Counter = np.random.randint(10,30)
-            #if car is in heavy traffic, speed is from 3 to 10mph
-            elif rand_traffic < Probability_of_heavy_traffic:
-                Speed_Counter = np.random.randint(3,10)
+            elif rand_traffic < Probabllity_of_medium_traffic and rand_traffic > Probability_of_light_traffic:
+                Speed_Counter = np.random.randint(20,40)
+            #if car is in heavy traffic, speed is from 1 to 10 mph
+            else:
+                Speed_Counter = np.random.randint(1,10)
+                
+        elif Exit_Number >= 12 and Exit_Number <= 14:
+            
+            Speed_Counter = np.random.randint(40, 60)
+            
         else:
             Speed_Counter = 60
         
         #print(Speed_Counter)
         # Rain has the chance to slow down speed based on the severity of the rain fall
+        
+        # Run the probability of rain
+        rand = np.random.random()
+        
         if rand < random_chance_of_rain:
             
             # Determine the rain severity and the impact it may have on traffic speed
@@ -81,27 +90,34 @@ def simulation():
             if rand < Probability_of_medium_rain_fall:
                 
                 #only change if current speed is greater than the slow speed
-                if Speed_Counter >10:   
-                   Speed_Counter = Speed_Counter - 10
+                if Speed_Counter > 10:   
+                   Speed_Counter = Speed_Counter - np.random.randint(5,10)
                 
             elif rand < Probability_of_light_rain_fall:
                 
                 choices = np.random.randint(0,2)
                 
                 if choices == 0:
-                    #only change if current speed is greater than the slow speed
-                    if Speed_Counter >5:  
+                    # only change if current speed is greater than the slow speed
+                    if Speed_Counter > 5:  
                         Speed_Counter = Speed_Counter - np.random.randint(0, 5)
               
-        Time_Elapsed = Time_Elapsed + (1 / Speed_Counter)
+        Time_Elapsed = Time_Elapsed + (DISTANCE[count] / Speed_Counter)
                 
         # Update exit number
         Exit_Number = Exit_Number + 1
+        count += 1
+        
         print(Speed_Counter,"mph",rand_traffic)
         
     Time_Elapsed = int(Time_Elapsed * 60)
     
     print("--------------------------")
-    print(Time_Elapsed)
-        
-simulation()
+    print(Time_Elapsed, "mins")
+    
+    List_of_times.append(Time_Elapsed)
+    
+for i in range (1000):
+    simulation()
+
+print(round(np.average(List_of_times), 0))
