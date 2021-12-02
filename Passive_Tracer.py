@@ -6,6 +6,7 @@ Created on Tue Nov 30 15:30:00 2021
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Global Constants
 MINIMUM_SPD = 0
@@ -38,6 +39,7 @@ Probability_of_light_traffic = 0.10
 Probabllity_of_medium_traffic = 0.80
 
 List_of_times = []
+Number_of_simulations = []
 
 def simulation():
     
@@ -62,7 +64,7 @@ def simulation():
             if  rand_traffic < Probability_of_light_traffic:
                 Speed_Counter = np.random.randint(50,60)
             #if car is in medium traffic, speed is from 10 to 30 mph
-            elif rand_traffic < Probabllity_of_medium_traffic and rand_traffic > Probability_of_light_traffic:
+            elif rand_traffic < Probabllity_of_medium_traffic and rand_traffic >= Probability_of_light_traffic:
                 Speed_Counter = np.random.randint(20,40)
             #if car is in heavy traffic, speed is from 1 to 10 mph
             else:
@@ -106,18 +108,31 @@ def simulation():
                 
         # Update exit number
         Exit_Number = Exit_Number + 1
+        
+        # Update distance from one exit to another
         count += 1
         
-        print(Speed_Counter,"mph",rand_traffic)
+        # print(Speed_Counter,"mph",rand_traffic)
         
     Time_Elapsed = int(Time_Elapsed * 60)
     
-    print("--------------------------")
-    print(Time_Elapsed, "mins")
+    # print("--------------------------")
+    # print(Time_Elapsed, "mins")
     
     List_of_times.append(Time_Elapsed)
-    
-for i in range (1000):
-    simulation()
 
-print(round(np.average(List_of_times), 0))
+count = 1
+
+for i in range (1, 1001):
+        
+    simulation()
+    Number_of_simulations.append(count)
+    
+    count = count + 1
+    
+    if (i % 100) == 0:
+        print("After", i ," one hundred runs ", np.ceil(np.average(List_of_times)), "mins")
+    
+plt.hist(List_of_times)
+    
+# plt.plot(Number_of_simulations, List_of_times)
