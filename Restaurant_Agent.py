@@ -211,8 +211,13 @@ def eating_food():
             if people.time_in_restaurant == people.eating_time:
                 #print(people.time_in_restaurant)
                 people.state = "Left"
-                
                 served_customer+=1
+                for row in range(len(list_of_tables)):
+                    for table in range(len(list_of_tables[row])):
+                        for customer_table in people.tableNumber:
+                            check_table= list_of_tables[row][table].tableNumber
+                            if customer_table==check_table:
+                                list_of_tables[row][table].state = "Empty"
         
 def order_food():
     for people in list_of_customers:
@@ -256,7 +261,7 @@ def operations():
                             customer.tableNumber.append(list_of_tables[i][j].tableNumber)
                             customer.waiting_time += time_step
                             customer.state = "Order"
-                            order_food(customer)
+                            
                             list_of_customers.append(customer)
                             list_of_tables[i][j].state= "Occupied"                                                     
                             priority_list.remove(customer)
@@ -265,33 +270,28 @@ def operations():
                         #if the priority list is empty                       
                         else:  
                             #get the next customer in line
-                            customer = list_of_people_in_line[0]
+                            if list_of_people_in_line:
+                                customer = list_of_people_in_line[0]
                         
-                            #if the number of customer is less than the number of chair in a table
-                            if customer.number_of_people <= list_of_tables[i][j].chairs:
+                                #if the number of customer is less than the number of chair in a table
+                                if customer.number_of_people <= list_of_tables[i][j].chairs:
                                 
-                                customer.tableNumber.append(list_of_tables[i][j].tableNumber)
-                                list_of_tables[i][j].state = "Occupied"
-                                customer.waiting_time += time_step
-                                customer.state = "Order"
-                                list_of_customers.append(customer)
-                                list_of_people_in_line.remove(customer)   
-                                print("next group of",customer.number_of_people,"table",customer.tableNumber)                                                               
-                                #if the number of customer is greater than the number of chair in a table
-                            else:
-                                """
-                                customer.tableNumber = list_of_tables[i][j].tableNumber
-                                list_of_tables[i][j].state = "Occupied"
-                                list_of_customers.append(customer)
-                                list_of_people_in_line.remove(customer)"""
-                                
-                                customer.tableNumber.append(list_of_tables[i][j].tableNumber)
-                                list_of_tables[i][j].state = "Occupied"  
-                                is_table_available=find_extra_table(customer)
-                                print("big group of",customer.number_of_people,"tables", customer.tableNumber)
-                                if not is_table_available:
-                                    print("move customer to priority list and reserve a table")
-                                    priority_list.append(customer)  
+                                    customer.tableNumber.append(list_of_tables[i][j].tableNumber)
+                                    list_of_tables[i][j].state = "Occupied"
+                                    customer.waiting_time += time_step
+                                    customer.state = "Order"
+                                    list_of_customers.append(customer)
+                                    list_of_people_in_line.remove(customer)   
+                                    print("next group of",customer.number_of_people,"table",customer.tableNumber)                                                               
+                                    #if the number of customer is greater than the number of chair in a table
+                                else:                                        
+                                    customer.tableNumber.append(list_of_tables[i][j].tableNumber)
+                                    list_of_tables[i][j].state = "Occupied"  
+                                    is_table_available=find_extra_table(customer)
+                                    print("big group of",customer.number_of_people,"tables", customer.tableNumber)
+                                    if not is_table_available:
+                                        print("move customer to priority list and reserve a table")
+                                        priority_list.append(customer)  
                                                                                                        
         order_food()
         eating_food()                                                   
