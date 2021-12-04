@@ -15,34 +15,38 @@ MAXIMUM_CAPACITY = 300 # maximum customer can be in restaurant
 RESTAURANT_WIDTH = 15 
 RESTAURANT_LENGTH = 15
 BEGINNING_HOURS = 10 # 10 o'clock am
-ENDING_HOURS = 22 # 10 o'clock pm
+ENDING_HOURS = 22 # 10 o'clock 
+TABLES = 9 # init tables
+
 
 # list of variable
 menu = ["Hamburger","Pizza","Steak"] # Food menu
 prep_time = [12,10,15] # the amount of time it take to make each meal 
 food_cost = [15,12,20] # the cost of each food
 total_number_of_customers = 0
+lost_customers = 0
 list_of_tables = [] # list to keep track of table
 list_of_customers = [] # list to keep track of group
 list_of_people_in_line = []
+operating_hours = BEGINNING_HOURS
 
 # Other variables
 waiting_time_spawn_customer = 0 # wait time to spawn each customer
 chairs = 4 # init chairs
-tables = 10 # init tables
 group = 10 # init customer group
 revenue = 0 # init revenue
 average_time = 0 # init average time
 served_customer = 0 # init served customer
 unserved_customer = 0 # init not served customer
 time_step = 0.5
-beginning_number_of_customers = 16
+beginning_number_of_customers = 12
 probability_of_large_group = 0.20
+grid = []
 
 #------------------------------------------------------------------------------
 class Customer(object):
 
-    def __init__(self, number_of_people, food_order, eating_time):
+    def __init__(self, food_order, number_of_people, eating_time):
         self.state = "Away"        
         self.food_order = food_order
         self.number_of_people = number_of_people
@@ -85,8 +89,9 @@ class Restaurant(object):
         count = 0
         
         for i in list_of_tables:
-            if i.availability():
-                count += 1
+            for j in i:
+                if j.availability():
+                    count += 1
         
         return count
     
@@ -101,29 +106,18 @@ class Table(object):
         self.tableNumber = tableNumber
     
     def availability(self):
-        return self.state == "Empty"
+        if self.state == "Empty":
+            return True
+        else:
+            return False
     
     def state(self):
         return self.state
 
 def simulationDriver(phase):
     
-    operating_hours = np.absolute(BEGINNING_HOURS - ENDING_HOURS)
-    
-    print("operating hours", operating_hours)
-    
-    while(operating_hours != ENDING_HOURS):
-        if phase == 0:
-            initialization()
-            phase = 1
-        elif phase == 1:
-            operations()
-            phase = 2
-            break
-        else:
-            if total_number_of_customers == 0:
-                break
-            update()
+    initialization()
+    operations()
             
 def initialization():
     
@@ -131,22 +125,26 @@ def initialization():
     
     for i in range(beginning_number_of_customers):
         customer = createCustomer()
-        list_of_customers.append(customer)
+        list_of_people_in_line.append(customer)
     
     # for i in range(len(list_of_customers)):
     #     print(list_of_customers[i].toString())
-        
-    for i in range(1, tables + 1):
+    
+    global list_of_tables
+
+    for i in range(1, TABLES + 1):
         table = Table(i)
         list_of_tables.append(table)
     
+    tab = np.array(list_of_tables)
+    
+    tab = np.reshape(tab, (3,3))
+    
+    list_of_tables = tab
     # for i in list_of_tables:
     #     print(i.state)
     #     print(i.tableNumber)
     
-    restaurant = Restaurant()
-    
-    print(restaurant.availableTables())
     
 def createCustomer():
     
@@ -168,12 +166,65 @@ def createCustomer():
     
 def operations():
     
-    for i in range(len(list_of_customers)):
-        list_of_people_in_line.append(i)
+    restaurant = Restaurant()
+    global list_of_people_in_line
+    global lost_customers
+    global operating_hours
+    global total_number_of_customers
     
-    pass
+    while (operating_hours != ENDING_HOURS):
+        
+        if restaurant.availableTables() > 0:
+        
+            for i in range(len(list_of_tables)):
+                for j in range(len(list_of_tables[i])):
+                    temp = list_of_tables[i][j]
+                    
+                    if temp.availability() == True:
+                        
+                        customer = list_of_people_in_line[0]
+                        
+                        if customer.number_of_people < list_of_tables[i][j].chairs:
+                            
+                            customer.tableNumber = list_of_tables[i][j].tableNumber
+                            list_of_tables[i][j].state = "Occupied"
+                            list_of_customers.append(customer)
+                            list_of_people_in_line.remove(customer)                                                                  
+                        
+                        else:
+                            
+                            customer.tableNumber = list_of_tables[i][j].tableNumber
+                            list_of_tables[i][j].state = "Occupied"
+                            list_of_customers.append(customer)
+                            list_of_people_in_line.remove(customer)
+        
+        list_of_people_in_line.append(createCustomer())
+        
+        for i in list_of_people_in_line:
+            total_number_of_customers = total_number_of_customers + i.number_of_people
+        
+        if total_number_of_customers > MAXIMUM_CAPACITY:
+            total_number_of_customers = total_number_of_customers - list_of_people_in_line[-1].number_of_people
+            list_of_customers.append(list_of_people_in_line[-1])
+            list_of_people_in_line.remove(list_of_people_in_line[-1])
+            lost_customers = lost_customers + 1
+        
+        operating_hours = operating_hours + time_step
 
-def update():
-    pass
-
+        print(total_number_of_customers)
+        
+        for i in list_of_people_in_line: 
+            i.waiting_time = i.waiting_time + (time_step * 60)
+            if i.waiting_time > MAXIMUM_WAITING_TIME:
+                list_of_customers.append(i)
+                list_of_people_in_line.remove(i)
+                lost_customers = lost_customers + 1
+        
+    print(lost_customers)
+    
+    print(len(list_of_customers))
+    
+    print(len(list_of_people_in_line))
+    
+    
 simulationDriver(0)
