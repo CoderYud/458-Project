@@ -14,8 +14,10 @@ MAXIMUM_EATING_TIME = 120 # minutes
 MAXIMUM_CAPACITY = 300 # maximum customer can be in restaurant
 RESTAURANT_WIDTH = 15 
 RESTAURANT_LENGTH = 15
-BEGINNING_HOURS = 10 # 10 o'clock am
-ENDING_HOURS = 22 # 10 o'clock 
+#BEGINNING_HOURS = 10 # 10 o'clock am
+#ENDING_HOURS = 22 # 10 o'clock 
+BEGINNING_HOURS_IN_MINUTES = 0 #time in minutes
+ENDING_HOURS_IN_MINUTES= 600 #time in minutes
 TABLES = 9 # init tables
 
 
@@ -30,7 +32,7 @@ list_of_customers = [] # list to keep track of group
 list_of_people_in_line = []
 priority_list=[]
 preoccupied_table=[]
-operating_hours = BEGINNING_HOURS
+operating_hours = BEGINNING_HOURS_IN_MINUTES
 
 # Other variables
 waiting_time_spawn_customer = 0 # wait time to spawn each customer
@@ -40,11 +42,11 @@ revenue = 0 # init revenue
 average_time = 0 # init average time
 served_customer = 0 # init served customer
 unserved_customer = 0 # init not served customer
-time_step = 0.5
+time_step = 1
 beginning_number_of_customers = 12
 probability_of_large_group = 0.20
 grid = []
-
+payment = []
 #------------------------------------------------------------------------------
 class Customer(object):
 
@@ -64,8 +66,9 @@ class Customer(object):
         if status == 1:
             self. state = "Served"
         if status == 2:
-            self.state= "Left"
-    
+            self.state = "Left"
+        if status == 3:
+            self.state = "Order"
     def location(self):
         return self.tableNumber
     
@@ -181,8 +184,9 @@ def find_extra_table(customer):
             if check.availability() == True:
                 
                 #set table to occupied
-                list_of_tables[table][row].state= "Occupied"
-                
+                list_of_tables[row][table].state= "Occupied"
+                customer.state = "Order"
+                customer.waiting_time += time_step
                 list_of_customers.append(customer)
                 #remove customer from the waitlist
                 list_of_people_in_line.remove(customer)
@@ -192,7 +196,40 @@ def find_extra_table(customer):
                 return True           
     #return false because there are no available table    
     return False
-    
+
+#check customer eating time
+def eating_food():
+    global served_customer
+    for people in list_of_customers:
+        #if group is current being served
+        if people.state == "Served":
+            #increment eating time by one every minutes
+            people.time_in_restaurant+=time_step
+            #print(people.time_in_restaurant,people.eating_time)
+            #if the time spend in restaurant is equal to approximate eating time
+            #set customer to done eating
+            if people.time_in_restaurant == people.eating_time:
+                #print(people.time_in_restaurant)
+                people.state = "Left"
+                
+                served_customer+=1
+        
+def order_food():
+    for people in list_of_customers:
+        if people.state == "Order":           
+            if people.food_order == "Steak":
+                payment.append(food_cost[2]*people.number_of_people)
+                people.eating_time += prep_time[2]
+                people.state = "Served"
+            if people.food_order == "Pizza":
+                payment.append((food_cost[1]*people.number_of_people))
+                people.eating_time += prep_time[1]
+                people.state = "Served"
+            if people.food_order == "Hamburger":
+                payment.append((food_cost[0]*people.number_of_people))
+                people.eating_time += prep_time[0]    
+                people.state = "Served"
+
 def operations():
     
     restaurant = Restaurant()
@@ -201,7 +238,7 @@ def operations():
     global operating_hours
     global total_number_of_customers
     
-    while (operating_hours != ENDING_HOURS):
+    while (operating_hours != ENDING_HOURS_IN_MINUTES):
         
         if restaurant.availableTables() > 0:
         
@@ -217,8 +254,13 @@ def operations():
                             print("next group of",customer.number_of_people,"from the priority list")      
                             #add the next available table next to the assigned table
                             customer.tableNumber.append(list_of_tables[i][j].tableNumber)
+                            customer.waiting_time += time_step
+                            customer.state = "Order"
+                            order_food(customer)
+                            list_of_customers.append(customer)
                             list_of_tables[i][j].state= "Occupied"                                                     
                             priority_list.remove(customer)
+                            
                             
                         #if the priority list is empty                       
                         else:  
@@ -230,6 +272,8 @@ def operations():
                                 
                                 customer.tableNumber.append(list_of_tables[i][j].tableNumber)
                                 list_of_tables[i][j].state = "Occupied"
+                                customer.waiting_time += time_step
+                                customer.state = "Order"
                                 list_of_customers.append(customer)
                                 list_of_people_in_line.remove(customer)   
                                 print("next group of",customer.number_of_people,"table",customer.tableNumber)                                                               
@@ -249,7 +293,8 @@ def operations():
                                     print("move customer to priority list and reserve a table")
                                     priority_list.append(customer)  
                                                                                                        
-                                                            
+        order_food()
+        eating_food()                                                   
         
         list_of_people_in_line.append(createCustomer())
         
@@ -267,11 +312,13 @@ def operations():
         #print(total_number_of_customers)
         
         for i in list_of_people_in_line: 
-            i.waiting_time = i.waiting_time + (time_step * 60)
+            i.waiting_time = i.waiting_time + time_step
             if i.waiting_time > MAXIMUM_WAITING_TIME:
                 list_of_customers.append(i)
                 list_of_people_in_line.remove(i)
                 lost_customers = lost_customers + 1
+        #increase the time by one minute
+        operating_hours+=1
         
     #print(lost_customers)
     
@@ -279,5 +326,5 @@ def operations():
     
     #print(len(list_of_people_in_line))
     
-    
+    print(served_customer)
 simulationDriver(0)
