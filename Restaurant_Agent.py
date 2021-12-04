@@ -197,6 +197,7 @@ def find_extra_table(customer):
     #return false because there are no available table    
     return False
 
+
 #check customer eating time
 def eating_food():
     global served_customer
