@@ -28,6 +28,8 @@ lost_customers = 0
 list_of_tables = [] # list to keep track of table
 list_of_customers = [] # list to keep track of group
 list_of_people_in_line = []
+priority_list=[]
+preoccupied_table=[]
 operating_hours = BEGINNING_HOURS
 
 # Other variables
@@ -53,7 +55,8 @@ class Customer(object):
         self.waiting_time = 0
         self.time_in_restaurant = 0
         self.eating_time = eating_time
-        self.tableNumber = 0
+        self.tableNumber = []
+        
 
     def state(self, status):
         if status == 0:
@@ -83,6 +86,8 @@ class Restaurant(object):
             self.state = "Occupied"
         if status == 1:
             self.state = "Empty"
+        if status == 2:
+            self.state = "Preoccupied"
     
     def availableTables(self):
         
@@ -163,6 +168,30 @@ def createCustomer():
         eating_time = random.randint(15, 60)
             
     return Customer(food_order, number_of_people, eating_time)
+ 
+def find_extra_table(customer):
+    #look at each row of tables
+    for row in range(len(list_of_tables)):
+        #look at each table
+        for table in range(len(list_of_tables[row])):
+            #check if there is an extra table
+            check = list_of_tables[row][table]
+            
+            #if the there is an extra table available
+            if check.availability() == True:
+                
+                #set table to occupied
+                list_of_tables[table][row].state= "Occupied"
+                
+                list_of_customers.append(customer)
+                #remove customer from the waitlist
+                list_of_people_in_line.remove(customer)
+                
+                #add another table next to the assigned table
+                customer.tableNumber.append(list_of_tables[row][table].tableNumber)
+                return True           
+    #return false because there are no available table    
+    return False
     
 def operations():
     
@@ -181,27 +210,51 @@ def operations():
                     temp = list_of_tables[i][j]
                     
                     if temp.availability() == True:
-                        
-                        customer = list_of_people_in_line[0]
-                        
-                        if customer.number_of_people < list_of_tables[i][j].chairs:
+                        #check the priority list
+                        #if it is not empty get the next customer
+                        if priority_list:
+                            customer = priority_list[0]
+                            print("next group of",customer.number_of_people,"from the priority list")      
+                            #add the next available table next to the assigned table
+                            customer.tableNumber.append(list_of_tables[i][j].tableNumber)
+                            list_of_tables[i][j].state= "Occupied"                                                     
+                            priority_list.remove(customer)
                             
-                            customer.tableNumber = list_of_tables[i][j].tableNumber
-                            list_of_tables[i][j].state = "Occupied"
-                            list_of_customers.append(customer)
-                            list_of_people_in_line.remove(customer)                                                                  
+                        #if the priority list is empty                       
+                        else:  
+                            #get the next customer in line
+                            customer = list_of_people_in_line[0]
                         
-                        else:
-                            
-                            customer.tableNumber = list_of_tables[i][j].tableNumber
-                            list_of_tables[i][j].state = "Occupied"
-                            list_of_customers.append(customer)
-                            list_of_people_in_line.remove(customer)
+                            #if the number of customer is less than the number of chair in a table
+                            if customer.number_of_people <= list_of_tables[i][j].chairs:
+                                
+                                customer.tableNumber.append(list_of_tables[i][j].tableNumber)
+                                list_of_tables[i][j].state = "Occupied"
+                                list_of_customers.append(customer)
+                                list_of_people_in_line.remove(customer)   
+                                print("next group of",customer.number_of_people,"table",customer.tableNumber)                                                               
+                                #if the number of customer is greater than the number of chair in a table
+                            else:
+                                """
+                                customer.tableNumber = list_of_tables[i][j].tableNumber
+                                list_of_tables[i][j].state = "Occupied"
+                                list_of_customers.append(customer)
+                                list_of_people_in_line.remove(customer)"""
+                                
+                                customer.tableNumber.append(list_of_tables[i][j].tableNumber)
+                                list_of_tables[i][j].state = "Occupied"  
+                                is_table_available=find_extra_table(customer)
+                                print("big group of",customer.number_of_people,"tables", customer.tableNumber)
+                                if not is_table_available:
+                                    print("move customer to priority list and reserve a table")
+                                    priority_list.append(customer)  
+                                                                                                       
+                                                            
         
         list_of_people_in_line.append(createCustomer())
         
-        for i in list_of_people_in_line:
-            total_number_of_customers = total_number_of_customers + i.number_of_people
+        #for i in list_of_people_in_line:
+        total_number_of_customers = total_number_of_customers + list_of_people_in_line[-1].number_of_people
         
         if total_number_of_customers > MAXIMUM_CAPACITY:
             total_number_of_customers = total_number_of_customers - list_of_people_in_line[-1].number_of_people
@@ -211,7 +264,7 @@ def operations():
         
         operating_hours = operating_hours + time_step
 
-        print(total_number_of_customers)
+        #print(total_number_of_customers)
         
         for i in list_of_people_in_line: 
             i.waiting_time = i.waiting_time + (time_step * 60)
@@ -220,11 +273,11 @@ def operations():
                 list_of_people_in_line.remove(i)
                 lost_customers = lost_customers + 1
         
-    print(lost_customers)
+    #print(lost_customers)
     
-    print(len(list_of_customers))
+    #print(len(list_of_customers))
     
-    print(len(list_of_people_in_line))
+    #print(len(list_of_people_in_line))
     
     
 simulationDriver(0)
