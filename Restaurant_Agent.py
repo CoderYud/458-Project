@@ -35,10 +35,9 @@ preoccupied_table=[]
 operating_hours = BEGINNING_HOURS_IN_MINUTES
 
 # Other variables
-waiting_time_spawn_customer = 0 # wait time to spawn each customer
 chairs = 4 # init chairs
-group = 10 # init customer group
 revenue = 0 # init revenue
+lost_revenue = 0
 served_customer = 0 # init served customer
 unserved_customer = 0 # init not served customer
 time_step = 1
@@ -47,18 +46,19 @@ probability_of_large_group = 0.20
 grid = []
 payment = []
 average_time = []
+
 #------------------------------------------------------------------------------
 class Customer(object):
 
     def __init__(self, food_order, number_of_people, eating_time):
-        self.state = "Away"        
+        self.state = "Waiting"        
         self.food_order = food_order
         self.number_of_people = number_of_people
         self.waiting_time = 0
         self.time_in_restaurant = 0
         self.eating_time = eating_time
         self.tableNumber = []
-        
+        self.cost = 0
 
     def state(self, status):
         if status == 0:
@@ -66,9 +66,12 @@ class Customer(object):
         if status == 1:
             self. state = "Served"
         if status == 2:
-            self.state = "Left"
+            self.state = "Paid"
         if status == 3:
             self.state = "Order"
+        if status == 4:
+            self.state = "Unserved"
+            
     def location(self):
         return self.tableNumber
     
@@ -208,7 +211,7 @@ def eating_food():
             #set customer to done eating
             if people.time_in_restaurant == people.eating_time:
                 #print(people.time_in_restaurant)
-                people.state = "Left"
+                people.state = "Paid"
                 served_customer += 1
                 for row in range(len(list_of_tables)):
                     for table in range(len(list_of_tables[row])):
@@ -244,6 +247,8 @@ def operations():
     global lost_customers
     global operating_hours
     global total_number_of_customers
+    global revenue
+    global lost_revenue
     
     while (operating_hours != ENDING_HOURS_IN_MINUTES):
         
@@ -307,6 +312,7 @@ def operations():
         
         if total_number_of_customers > MAXIMUM_CAPACITY:
             total_number_of_customers = total_number_of_customers - list_of_people_in_line[-1].number_of_people
+            list_of_people_in_line[-1].state = "Unserved"
             list_of_customers.append(list_of_people_in_line[-1])
             list_of_people_in_line.remove(list_of_people_in_line[-1])
             lost_customers = lost_customers + 1
@@ -316,31 +322,56 @@ def operations():
         for i in list_of_people_in_line: 
             i.waiting_time = i.waiting_time + time_step
             if i.waiting_time > MAXIMUM_WAITING_TIME:
-                i.state = "Left"
+                i.state = "Unserved"
                 list_of_customers.append(i)
                 list_of_people_in_line.remove(i)
                 lost_customers = lost_customers + 1
         
         operating_hours = operating_hours + time_step
-        
-    print("Number of lost customers", lost_customers)
     
-    print("Number of customers", len(list_of_customers))
-    
-    print("Number of people in line", len(list_of_people_in_line))
-    
-    print("Number of served customers", served_customer)
     
     for i in list_of_customers:
-        if i.state == "Left":
+        if i.state == "Paid":
             average_time.append(i.time_in_restaurant + i.waiting_time)
-    
-    print("Customers spend this much time in the restaurant on average:", round(np.average(average_time)), "mins")
     
     # print(list_of_customers[0].time_in_restaurant, list_of_customers[0].waiting_time)
     
+    if len(list_of_people_in_line) > 0:
+        
+        for person in list_of_people_in_line:
+            list_of_customers.append(person) 
+            list_of_people_in_line.remove(person)
+            lost_customers = lost_customers + 1
     
-
+    for customer in payment:
+        revenue = revenue + customer
+        
+    for customer in list_of_customers:
+        if customer.state == "Unserved":
+            order = customer.food_order
+            if order == "Steak":
+                lost_revenue = lost_revenue + food_cost[2] * customer.number_of_people
+            if order == "Pizza":
+                lost_revenue = lost_revenue + food_cost[1] * customer.number_of_people
+            if order == "Hamburger":
+                lost_revenue = lost_revenue + food_cost[0] * customer.number_of_people
+    
+    print("|-------------------------------------------------------------------------|")
+    
+    print("Number of lost customers:", lost_customers)
+    
+    print("Number of customers:", len(list_of_customers))
+    
+    print("Number of people in line:", len(list_of_people_in_line))
+    
+    print("Number of served customers", served_customer)
+    
+    print("Customers spend this much time in the restaurant on average:", round(np.average(average_time)), "mins")
+    
+    print("Total Revenue:", revenue, "Dollars")
+    
+    print("Total Lost Revenue:", lost_revenue, "Dollars")
+    
 def simulationDriver(phase):
     
     initialization()
