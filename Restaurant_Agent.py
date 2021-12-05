@@ -39,7 +39,6 @@ waiting_time_spawn_customer = 0 # wait time to spawn each customer
 chairs = 4 # init chairs
 group = 10 # init customer group
 revenue = 0 # init revenue
-average_time = 0 # init average time
 served_customer = 0 # init served customer
 unserved_customer = 0 # init not served customer
 time_step = 1
@@ -47,6 +46,7 @@ beginning_number_of_customers = 12
 probability_of_large_group = 0.20
 grid = []
 payment = []
+average_time = []
 #------------------------------------------------------------------------------
 class Customer(object):
 
@@ -121,11 +121,6 @@ class Table(object):
     
     def state(self):
         return self.state
-
-def simulationDriver(phase):
-    
-    initialization()
-    operations()
             
 def initialization():
     
@@ -168,7 +163,7 @@ def createCustomer():
     if number_of_people >= 4:
         eating_time = random.randint(30, 60)
     else:
-        eating_time = random.randint(15, 60)
+        eating_time = random.randint(15, 30)
             
     return Customer(food_order, number_of_people, eating_time)
  
@@ -183,8 +178,8 @@ def find_extra_table(customer):
             #if the there is an extra table available
             if check.availability() == True:
                 
-                #set table to occupied
-                list_of_tables[row][table].state= "Occupied"
+                # set table to occupied
+                list_of_tables[row][table].state = "Occupied"
                 customer.state = "Order"
                 customer.waiting_time += time_step
                 list_of_customers.append(customer)
@@ -192,14 +187,16 @@ def find_extra_table(customer):
                 list_of_people_in_line.remove(customer)
                 
                 #add another table next to the assigned table
-                customer.tableNumber.append(list_of_tables[row][table].tableNumber)
+                customer.tableNumber.append(check.tableNumber)
                 return True           
+            
     #return false because there are no available table    
     return False
 
 
 #check customer eating time
 def eating_food():
+    
     global served_customer
     for people in list_of_customers:
         #if group is current being served
@@ -212,28 +209,32 @@ def eating_food():
             if people.time_in_restaurant == people.eating_time:
                 #print(people.time_in_restaurant)
                 people.state = "Left"
-                served_customer+=1
+                served_customer += 1
                 for row in range(len(list_of_tables)):
                     for table in range(len(list_of_tables[row])):
                         for customer_table in people.tableNumber:
-                            check_table= list_of_tables[row][table].tableNumber
+                            check_table = list_of_tables[row][table].tableNumber
                             if customer_table==check_table:
                                 list_of_tables[row][table].state = "Empty"
         
 def order_food():
+    
+    # Loops through the list of customers and check to see if the customer is ordering
+    # Then, updates the waiting time for food because of prep time and changes the customer's
+    # state to reflect the customer being served
     for people in list_of_customers:
         if people.state == "Order":           
             if people.food_order == "Steak":
                 payment.append(food_cost[2]*people.number_of_people)
-                people.eating_time += prep_time[2]
+                people.waiting_time += prep_time[2]
                 people.state = "Served"
             if people.food_order == "Pizza":
                 payment.append((food_cost[1]*people.number_of_people))
-                people.eating_time += prep_time[1]
+                people.waiting_time += prep_time[1]
                 people.state = "Served"
             if people.food_order == "Hamburger":
                 payment.append((food_cost[0]*people.number_of_people))
-                people.eating_time += prep_time[0]    
+                people.waiting_time += prep_time[0]
                 people.state = "Served"
 
 def operations():
@@ -255,77 +256,94 @@ def operations():
                     if temp.availability() == True:
                         #check the priority list
                         #if it is not empty get the next customer
-                        if priority_list:
+                        if len(priority_list) > 0:
                             customer = priority_list[0]
                             print("next group of",customer.number_of_people,"from the priority list")      
-                            #add the next available table next to the assigned table
-                            customer.tableNumber.append(list_of_tables[i][j].tableNumber)
+                            #add the next available table next to the assigned table                            
+                            customer.tableNumber.append(temp.tableNumber)
                             customer.waiting_time += time_step
                             customer.state = "Order"
-                            
+                            print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
                             list_of_customers.append(customer)
                             list_of_tables[i][j].state= "Occupied"                                                     
                             priority_list.remove(customer)
-                            
-                            
+                                                        
                         #if the priority list is empty                       
                         else:  
                             #get the next customer in line
-                            if list_of_people_in_line:
+                            if len(list_of_people_in_line) > 0:
                                 customer = list_of_people_in_line[0]
-                        
                                 #if the number of customer is less than the number of chair in a table
-                                if customer.number_of_people <= list_of_tables[i][j].chairs:
+                                if customer.number_of_people <= temp.chairs:
                                 
-                                    customer.tableNumber.append(list_of_tables[i][j].tableNumber)
-                                    list_of_tables[i][j].state = "Occupied"
+                                    customer.tableNumber.append(temp.tableNumber)
+                                    temp.state = "Occupied"
                                     customer.waiting_time += time_step
                                     customer.state = "Order"
                                     list_of_customers.append(customer)
                                     list_of_people_in_line.remove(customer)   
-                                    print("next group of",customer.number_of_people,"table",customer.tableNumber)                                                               
+                                    print("next group of",customer.number_of_people,"to table",customer.tableNumber)                                                               
                                     #if the number of customer is greater than the number of chair in a table
-                                else:                                        
-                                    customer.tableNumber.append(list_of_tables[i][j].tableNumber)
-                                    list_of_tables[i][j].state = "Occupied"  
-                                    is_table_available=find_extra_table(customer)
-                                    print("big group of",customer.number_of_people,"tables", customer.tableNumber)
-                                    if not is_table_available:
-                                        print("move customer to priority list and reserve a table")
-                                        priority_list.append(customer)  
-                                                                                                       
+                                else:
+                                    customer.tableNumber.append(temp.tableNumber)
+                                    temp.state = "Occupied"
+                                    is_table_available = find_extra_table(customer)
+                                    if is_table_available == False:
+                                        print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
+                                        priority_list.append(customer)
+                                        list_of_customers.append(customer)
+                                        list_of_people_in_line.remove(customer)
+                                    else:
+                                        print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+                                                                                               
         order_food()
         eating_food()                                                   
         
-        list_of_people_in_line.append(createCustomer())
-        
-        #for i in list_of_people_in_line:
-        total_number_of_customers = total_number_of_customers + list_of_people_in_line[-1].number_of_people
+        if (operating_hours % 30) == 0:
+            list_of_people_in_line.append(createCustomer())
+            if len(list_of_people_in_line) != 0:
+            #for i in list_of_people_in_line:
+                total_number_of_customers = total_number_of_customers + list_of_people_in_line[-1].number_of_people
         
         if total_number_of_customers > MAXIMUM_CAPACITY:
             total_number_of_customers = total_number_of_customers - list_of_people_in_line[-1].number_of_people
             list_of_customers.append(list_of_people_in_line[-1])
             list_of_people_in_line.remove(list_of_people_in_line[-1])
             lost_customers = lost_customers + 1
-        
-        operating_hours = operating_hours + time_step
 
         #print(total_number_of_customers)
         
         for i in list_of_people_in_line: 
             i.waiting_time = i.waiting_time + time_step
             if i.waiting_time > MAXIMUM_WAITING_TIME:
+                i.state = "Left"
                 list_of_customers.append(i)
                 list_of_people_in_line.remove(i)
                 lost_customers = lost_customers + 1
-        #increase the time by one minute
-        operating_hours+=1
         
-    #print(lost_customers)
+        operating_hours = operating_hours + time_step
+        
+    print("Number of lost customers", lost_customers)
     
-    #print(len(list_of_customers))
+    print("Number of customers", len(list_of_customers))
     
-    #print(len(list_of_people_in_line))
+    print("Number of people in line", len(list_of_people_in_line))
     
-    print(served_customer)
+    print("Number of served customers", served_customer)
+    
+    for i in list_of_customers:
+        if i.state == "Left":
+            average_time.append(i.time_in_restaurant + i.waiting_time)
+    
+    print("Customers spend this much time in the restaurant on average:", round(np.average(average_time)), "mins")
+    
+    # print(list_of_customers[0].time_in_restaurant, list_of_customers[0].waiting_time)
+    
+    
+
+def simulationDriver(phase):
+    
+    initialization()
+    operations()
+    
 simulationDriver(0)
