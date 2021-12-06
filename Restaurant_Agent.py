@@ -4,48 +4,63 @@ Created on Thu Dec  2 21:55:39 2021
 
 @author: Bin Map & Vincent Bui
 """
+
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 
-# Constant variables no touch please
+# Constant variables 
 
-MAXIMUM_WAITING_TIME = 120 # minutes
-MAXIMUM_EATING_TIME = 120 # minutes
-MAXIMUM_CAPACITY = 300 # maximum customer can be in restaurant
 RESTAURANT_WIDTH = 15 
 RESTAURANT_LENGTH = 15
-#BEGINNING_HOURS = 10 # 10 o'clock am
-#ENDING_HOURS = 22 # 10 o'clock 
-BEGINNING_HOURS_IN_MINUTES = 0 #time in minutes
-ENDING_HOURS_IN_MINUTES= 600 #time in minutes
-TABLES = 9 # init tables
-
-
-# list of variable
+BEGINNING_HOURS_IN_MINUTES = 0 #time in minutes (10 am)
+ENDING_HOURS_IN_MINUTES = 720 #time in minutes (10 pm)
 menu = ["Hamburger","Pizza","Steak"] # Food menu
 prep_time = [12,10,15] # the amount of time it take to make each meal 
 food_cost = [15,12,20] # the cost of each food
+
+# list of variable
+
 total_number_of_customers = 0
 lost_customers = 0
 list_of_tables = [] # list to keep track of table
 list_of_customers = [] # list to keep track of group
 list_of_people_in_line = []
-priority_list=[]
-preoccupied_table=[]
+priority_list = []
+preoccupied_table = []
 operating_hours = BEGINNING_HOURS_IN_MINUTES
-
-# Other variables
-chairs = 4 # init chairs
 revenue = 0 # init revenue
 lost_revenue = 0
 served_customer = 0 # init served customer
 unserved_customer = 0 # init not served customer
+total_number_of_customers_in_line = 0
 time_step = 1
-beginning_number_of_customers = 12
-probability_of_large_group = 0.20
 grid = []
 payment = []
 average_time = []
+
+average_number_of_customers = []
+average_number_of_served_customers = []
+average_number_of_lost_customers = []
+average_time_in_restaurant = []
+average_revenue = []
+average_lost_revenue = []
+
+# Elements that can be changed to affect results
+
+chairs = 4 # init chairs
+MAXIMUM_WAITING_TIME = 120 # minutes
+MAXIMUM_EATING_TIME = 60 # minutes
+MAXIMUM_CAPACITY = 150 # maximum customer can be in restaurant
+probability_of_large_group = 0.20
+beginning_number_of_customers = 12
+TABLES = 9 # init tables
+
+# What type of distributions can be used to change the results
+# What metrics can be used
+# Changing assumptions
+# What type of questions are we trying to answer with this model
+# The different type of metrics to answer those questions
 
 #------------------------------------------------------------------------------
 class Customer(object):
@@ -144,8 +159,15 @@ def initialization():
     
     tab = np.array(list_of_tables)
     
-    tab = np.reshape(tab, (3,3))
-    
+    if (len(list_of_tables) % 2) == 0:
+        tab = np.reshape(tab,(2,-1))
+    elif (len(list_of_tables) % 3) == 0:
+        tab = np.reshape(tab,(3,-1))
+    elif (len(list_of_tables) % 5) == 0:
+        tab = np.reshape(tab, (5, -1))
+    else:
+        raise ValueError("Choose a different number of tables")
+        
     list_of_tables = tab
     # for i in list_of_tables:
     #     print(i.state)
@@ -166,7 +188,7 @@ def createCustomer():
     if number_of_people >= 4:
         eating_time = random.randint(30, 60)
     else:
-        eating_time = random.randint(15, 30)
+        eating_time = random.randint(15, 45)
             
     return Customer(food_order, number_of_people, eating_time)
  
@@ -212,7 +234,7 @@ def eating_food():
             if people.time_in_restaurant == people.eating_time:
                 #print(people.time_in_restaurant)
                 people.state = "Paid"
-                served_customer += 1
+                served_customer = served_customer + people.number_of_people
                 for row in range(len(list_of_tables)):
                     for table in range(len(list_of_tables[row])):
                         for customer_table in people.tableNumber:
@@ -249,6 +271,7 @@ def operations():
     global total_number_of_customers
     global revenue
     global lost_revenue
+    global total_number_of_customers_in_line
     
     while (operating_hours != ENDING_HOURS_IN_MINUTES):
         
@@ -259,12 +282,12 @@ def operations():
                     temp = list_of_tables[i][j]
                     
                     if temp.availability() == True:
-                        #check the priority list
-                        #if it is not empty get the next customer
+                        # check the priority list
+                        # if it is not empty get the next customer
                         if len(priority_list) > 0:
                             customer = priority_list[0]
                             print("next group of",customer.number_of_people,"from the priority list")      
-                            #add the next available table next to the assigned table                            
+                            # add the next available table next to the assigned table                            
                             customer.tableNumber.append(temp.tableNumber)
                             customer.waiting_time += time_step
                             customer.state = "Order"
@@ -273,21 +296,24 @@ def operations():
                             list_of_tables[i][j].state= "Occupied"                                                     
                             priority_list.remove(customer)
                                                         
-                        #if the priority list is empty                       
+                        # if the priority list is empty                       
                         else:  
-                            #get the next customer in line
+                            
+                            # get the next customer in line
                             if len(list_of_people_in_line) > 0:
                                 customer = list_of_people_in_line[0]
-                                #if the number of customer is less than the number of chair in a table
-                                if customer.number_of_people <= temp.chairs:
                                 
+                                #if the number of customer is less than the number of chair in a table
+                                
+                                if customer.number_of_people <= temp.chairs:            
                                     customer.tableNumber.append(temp.tableNumber)
                                     temp.state = "Occupied"
                                     customer.waiting_time += time_step
                                     customer.state = "Order"
                                     list_of_customers.append(customer)
                                     list_of_people_in_line.remove(customer)   
-                                    print("next group of",customer.number_of_people,"to table",customer.tableNumber)                                                               
+                                    print("next group of",customer.number_of_people,"to table",customer.tableNumber) 
+                                                              
                                     #if the number of customer is greater than the number of chair in a table
                                 else:
                                     customer.tableNumber.append(temp.tableNumber)
@@ -304,44 +330,53 @@ def operations():
         order_food()
         eating_food()                                                   
         
-        if (operating_hours % 30) == 0:
+        # Customers geneally come into the resturant throughout the duration of operating hours
+        if (operating_hours % 15) == 0:
             list_of_people_in_line.append(createCustomer())
-            if len(list_of_people_in_line) != 0:
             #for i in list_of_people_in_line:
-                total_number_of_customers = total_number_of_customers + list_of_people_in_line[-1].number_of_people
+            for i in list_of_people_in_line:
+                total_number_of_customers_in_line = total_number_of_customers_in_line + i.number_of_people
+                
+        # Lunch and dinner
+        elif (operating_hours == 120 or operating_hours == 480):
+            rand = np.random.randint(5, 10)
+            for i in range(rand):
+                list_of_people_in_line.append(createCustomer())
+                for i in list_of_people_in_line:
+                    total_number_of_customers_in_line = total_number_of_customers_in_line + i.number_of_people
         
-        if total_number_of_customers > MAXIMUM_CAPACITY:
-            total_number_of_customers = total_number_of_customers - list_of_people_in_line[-1].number_of_people
+        if total_number_of_customers_in_line > MAXIMUM_CAPACITY and len(list_of_people_in_line) > 0:
+            total_number_of_customers_in_line = total_number_of_customers_in_line - list_of_people_in_line[-1].number_of_people
             list_of_people_in_line[-1].state = "Unserved"
             list_of_customers.append(list_of_people_in_line[-1])
+            lost_customers = lost_customers + i.number_of_people
             list_of_people_in_line.remove(list_of_people_in_line[-1])
-            lost_customers = lost_customers + 1
-
-        #print(total_number_of_customers)
+            
         
         for i in list_of_people_in_line: 
             i.waiting_time = i.waiting_time + time_step
             if i.waiting_time > MAXIMUM_WAITING_TIME:
                 i.state = "Unserved"
                 list_of_customers.append(i)
+                lost_customers = lost_customers + i.number_of_people
                 list_of_people_in_line.remove(i)
-                lost_customers = lost_customers + 1
+                
         
         operating_hours = operating_hours + time_step
-    
     
     for i in list_of_customers:
         if i.state == "Paid":
             average_time.append(i.time_in_restaurant + i.waiting_time)
+            
+    for i in list_of_customers:
+        total_number_of_customers = total_number_of_customers + i.number_of_people
     
-    # print(list_of_customers[0].time_in_restaurant, list_of_customers[0].waiting_time)
-    
-    if len(list_of_people_in_line) > 0:
-        
+    if len(list_of_people_in_line) > 0:        
         for person in list_of_people_in_line:
             list_of_customers.append(person) 
+            lost_customers = lost_customers + person.number_of_people
             list_of_people_in_line.remove(person)
-            lost_customers = lost_customers + 1
+            
     
     for customer in payment:
         revenue = revenue + customer
@@ -355,26 +390,82 @@ def operations():
                 lost_revenue = lost_revenue + food_cost[1] * customer.number_of_people
             if order == "Hamburger":
                 lost_revenue = lost_revenue + food_cost[0] * customer.number_of_people
+                
+    average_number_of_customers.append(total_number_of_customers)
+    average_number_of_served_customers.append(served_customer)
+    average_number_of_lost_customers.append(lost_customers)
+    average_time_in_restaurant.append(round(np.average(average_time)))
+    average_revenue.append(revenue)
+    average_lost_revenue.append(lost_revenue)
+    
+    
+def visuals():
+    
+    # wait time for customers throughout the day
+    
+    # num_of_customers = []
+    
+    # for i in range(len(list_of_customers)):
+    #     num_of_customers.append(i)
+    
+    # waiting_times = []
+    
+    # for i in list_of_customers:
+    #     waiting_times.append(i.waiting_time)
+    
+    # plt.plot(num_of_customers, waiting_times)
     
     print("|-------------------------------------------------------------------------|")
     
-    print("Number of lost customers:", lost_customers)
+    print("Total number of customers:", np.average(average_number_of_customers))
     
-    print("Number of customers:", len(list_of_customers))
+    print("Number of served customers within operating hours:", np.average(average_number_of_served_customers))
     
-    print("Number of people in line:", len(list_of_people_in_line))
+    print("Number of lost customers:", np.average(average_number_of_lost_customers))
     
-    print("Number of served customers", served_customer)
+    print("Customers spend this much time in the restaurant on average:", np.average(average_time_in_restaurant), "mins")
     
-    print("Customers spend this much time in the restaurant on average:", round(np.average(average_time)), "mins")
+    print("Total Revenue:", np.average(average_revenue), "Dollars")
     
-    print("Total Revenue:", revenue, "Dollars")
+    print("Total Lost Revenue:", np.average(average_lost_revenue), "Dollars")
+
+def reset():
     
-    print("Total Lost Revenue:", lost_revenue, "Dollars")
+    global list_of_people_in_line
+    global lost_customers
+    global operating_hours
+    global total_number_of_customers
+    global revenue
+    global lost_revenue
+    global total_number_of_customers_in_line
+    global list_of_customers
+    global list_of_people_in_line
+    global list_of_tables
+    global served_customer
+    global payment
     
-def simulationDriver(phase):
+    list_of_people_in_line = 0
+    lost_customers = 0
+    operating_hours = 0
+    total_number_of_customers = 0
+    revenue = 0
+    lost_revenue = 0
+    total_number_of_customers_in_line = 0
+    served_customer = 0
+    list_of_customers = []
+    list_of_people_in_line = []
+    list_of_tables = []
+    payment = []
+    
+def simulationDriver():
     
     initialization()
     operations()
-    
-simulationDriver(0)
+    reset()
+
+def multipleSimulationDriver(num):
+    for i in range(num):
+        simulationDriver()
+    visuals()
+
+multipleSimulationDriver(10)
