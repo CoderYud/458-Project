@@ -1,9 +1,29 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Dec  2 21:55:39 2021
+Created on Thu Dec 2 21:55:39 2021
 
-@author: Bin Map & Vincent Bui
+@authors: Bin Map & Vincent Bui
+
+This program simulates waiting in line at a restaurant.
+
+Assumptions:
+- Each customer orders something from a list of food items
+- Each food item will have a predetermined cost and preparation time. 
+For example, a hamburger can be cooked between 10 - 12 mins.
+- During the operational hours of the restaurant, customers will randomly enter in different intervals of the day.
+- Customers will show up more during lunch and dinner hours
+- Customer or group size can vary throughout the day
+- Group size will increase time in a restaurant eating
+- If there are not enough seats to fit a group, then the restaurant has to combine tables to fit the group
+- If queue times are too long then the last customer in the queue will leave
+- The number of customers that enters the queue is randomized
+- Restaurant has a max capacity of people that be queued 
+- If restaurant reaches max capacity inside the restaurant, the last person in queue needs to leave 
+because there is no more room inside the restaurant
+- Customers in a group order the same food
+
 """
+# Imports
 
 import numpy as np
 import random
@@ -19,7 +39,7 @@ menu = ["Hamburger","Pizza","Steak"] # Food menu
 prep_time = [12,10,15] # the amount of time it take to make each meal 
 food_cost = [15,12,20] # the cost of each food
 
-# list of variable
+# List of variables
 
 total_number_of_customers = 0
 lost_customers = 0
@@ -30,21 +50,19 @@ priority_list = []
 preoccupied_table = []
 operating_hours = BEGINNING_HOURS_IN_MINUTES
 revenue = 0 # init revenue
-lost_revenue = 0
+lost_revenue = 0 # revenue lost by not being meet customer demand
 served_customer = 0 # init served customer
 unserved_customer = 0 # init not served customer
-total_number_of_customers_in_line = 0
-time_step = 1
-grid = []
-payment = []
-average_time = []
-
-average_number_of_customers = []
-average_number_of_served_customers = []
-average_number_of_lost_customers = []
-average_time_in_restaurant = []
-average_revenue = []
-average_lost_revenue = []
+total_number_of_customers_in_line = 0 # checking the total number of people in line
+time_step = 1 # minutes
+payment = [] # Keeps list of all customers that paid
+average_time = [] # Average time in the restaurant waiting (time used for cooking food + time in queue)
+average_number_of_customers = [] # Average number of total customers
+average_number_of_served_customers = [] # Average number of customers served
+average_number_of_lost_customers = [] # Average number of lost customers
+average_time_in_restaurant = [] # Average time in restaurant
+average_revenue = [] # Average revenue
+average_lost_revenue = [] # Average lost revenue
 
 # Elements that can be changed to affect results
 
@@ -56,15 +74,21 @@ probability_of_large_group = 0.20
 beginning_number_of_customers = 12
 TABLES = 9 # init tables
 
-# What type of distributions can be used to change the results
-# What metrics can be used
-# Changing assumptions
-# What type of questions are we trying to answer with this model
-# The different type of metrics to answer those questions
-
-#------------------------------------------------------------------------------
+# ------------------------------ Class: Customer ------------------------------ 
 class Customer(object):
-
+    """
+    
+    This class stores the information for each of the customer objects
+    
+    Each customer has:
+        - state (whether the customer has order, waiting, been served, unserved, or paid)
+        - food_order - what the customer orders
+        - number_of_people - number of people in the group
+        - waiting_time - time waiting in queue and food 
+        - eating_time - time spent eating food
+        - tableNumber - what table(s) the customers are located at
+        
+    """
     def __init__(self, food_order, number_of_people, eating_time):
         self.state = "Waiting"        
         self.food_order = food_order
@@ -73,45 +97,70 @@ class Customer(object):
         self.time_in_restaurant = 0
         self.eating_time = eating_time
         self.tableNumber = []
-        self.cost = 0
+    
+# ----------------------- Class Function: state_as_int -----------------------    
+    def state_as_int(self):
+        """
+        
+        Checks the status of the customer
+        
+        Returns the integer equivalent for that particular state
+        
+        """
+        if self.state == "Waiting":
+            return 0
+        if self.state == "Served":
+            return 1
+        if self.state == "Paid":
+            return 2
+        if self.state == "Order":
+            return 3
+        if self.state == "Unserved":
+            return 4
 
-    def state(self, status):
-        if status == 0:
-            self.state = "Waiting"
-        if status == 1:
-            self. state = "Served"
-        if status == 2:
-            self.state = "Paid"
-        if status == 3:
-            self.state = "Order"
-        if status == 4:
-            self.state = "Unserved"
-            
+# ------------------------- Class Function: location -------------------------
     def location(self):
+        """
+        
+        Checks the location of where the customer is located in the tables
+        
+        Returns the list of where the customer is seated
+        
+        """
         return self.tableNumber
-    
+
+# ------------------------- Class Function: toString -------------------------
     def toString(self):
-        return self.food_order, self.number_of_people, self.waiting_time, self.eating_time
+        """
+        
+        Prints some attributes of the customer object
+
+        """
+        print(self.food_order, self.number_of_people, self.waiting_time, self.eating_time)
     
-#------------------------------------------------------------------------------
+# ----------------------------- Class: Restaurant -----------------------------
 class Restaurant(object):
+    """
+    This class stores the information for all the table objects
     
+    Each restaurant object has:
+        - tables - list of tables
+
+    """
     def __init__(self):
         self.restaurant_width = RESTAURANT_WIDTH
         self.restaurant_length = RESTAURANT_LENGTH
         self.tables = list_of_tables
-        self.state ="Empty"
 
-    def state(self, status):
-        if status == 0:
-            self.state = "Occupied"
-        if status == 1:
-            self.state = "Empty"
-        if status == 2:
-            self.state = "Preoccupied"
-    
+# ---------------------- Class Function: availableTables ----------------------   
     def availableTables(self):
+        """
+        This function returns the number of available tables in the restaurant
         
+        Returns:
+            count - int with the number of tables that are available, ("Empty")
+            
+        """
         count = 0
         
         for i in list_of_tables:
@@ -120,9 +169,10 @@ class Restaurant(object):
                     count += 1
         
         return count
-    
+
+# ------------------------- Class Function: toString -------------------------    
     def toString(self):
-        return self.tables, self.chairs, self.state
+        print(self.tables, self.chairs, self.state)
 
 class Table(object):
     
@@ -139,24 +189,37 @@ class Table(object):
     
     def state(self):
         return self.state
-            
+
+# ---------------------- General Function: initialization ----------------------          
 def initialization():
+    """ Creates the environment for the restaurant
     
-    # create the number of customers
+    Method Arguments:
+        None
+    Returns:
+        None
+       
+    Output:
+        - List of customer objects based on length of the beginning number
+        customer 
+        - 2D array of table objects
+    """
     
+    # create the beginning number of customers in line
     for i in range(beginning_number_of_customers):
         customer = createCustomer()
         list_of_people_in_line.append(customer)
     
-    # for i in range(len(list_of_customers)):
-    #     print(list_of_customers[i].toString())
-    
     global list_of_tables
-
+    
+    # generate tables in the restaurant
     for i in range(1, TABLES + 1):
         table = Table(i)
         list_of_tables.append(table)
-    
+        
+    # change the list into a 1D array and then reshape it
+    # to make a 2D array. If it is unable to reshape, then it 
+    # will display a ValueError 
     tab = np.array(list_of_tables)
     
     if (len(list_of_tables) % 2) == 0:
@@ -167,12 +230,8 @@ def initialization():
         tab = np.reshape(tab, (5, -1))
     else:
         raise ValueError("Choose a different number of tables")
-        
-    list_of_tables = tab
-    # for i in list_of_tables:
-    #     print(i.state)
-    #     print(i.tableNumber)
     
+    list_of_tables = tab
     
 def createCustomer():
     
@@ -398,7 +457,6 @@ def operations():
     average_revenue.append(revenue)
     average_lost_revenue.append(lost_revenue)
     
-    
 def visuals():
     
     # wait time for customers throughout the day
@@ -417,7 +475,7 @@ def visuals():
     
     print("|-------------------------------------------------------------------------|")
     
-    print("Total number of customers:", np.average(average_number_of_customers))
+    print("Total number of customers on average:", np.average(average_number_of_customers))
     
     print("Number of served customers within operating hours:", np.average(average_number_of_served_customers))
     
