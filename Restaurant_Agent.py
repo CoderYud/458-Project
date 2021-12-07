@@ -233,25 +233,31 @@ def initialization():
     
     list_of_tables = tab
     
+# ---------------------- General Function: createCustomer ---------------------
 def createCustomer():
     
+    #Customer select one of these options from the menu
     food_order = menu[random.randint(0, 2)]
         
     rand = random.random()
     
+    #Set the probability for having a big group
     if probability_of_large_group > rand:
         number_of_people = random.randint(4, 6)
     else:
         number_of_people = random.randint(1, 4)
         
+    #The bigger the group, the longer the eat time        
     if number_of_people >= 4:
         eating_time = random.randint(30, 60)
     else:
         eating_time = random.randint(15, 45)
-            
+    #Create customer        
     return Customer(food_order, number_of_people, eating_time)
  
+# ---------------------- General Function: find_extra_table -------------------
 def find_extra_table(customer):
+    
     #look at each row of tables
     for row in range(len(list_of_tables)):
         #look at each table
@@ -276,8 +282,85 @@ def find_extra_table(customer):
             
     #return false because there are no available table    
     return False
+    
+# ------------------- General Function: Check_Table_Next_To_It ----------------            
+def Check_Table_Next_To_It(customer,temp_table):
+    #go through each table
+    for row in range(len(list_of_tables)):
+        for table in range(len(list_of_tables[row])):
+            row_length=len(list_of_tables)-1
+            table_length=len(list_of_tables[row])-1
+            # find empty tables around the current table
+            if list_of_tables[row][table].tableNumber== temp_table.tableNumber:
+                
+                #if table fall in any of the condition
+                if row==0 or row==row_length or table==0 or table==table_length:
+                    
+                    #if there is a row above
+                    if row!=0:
+                        
+                        #if available bring them to tables
+                        if list_of_tables[row-1][table].availability(): #top
+                            return Bring_Big_Group_To_Tables(customer,row-1,table)
+                    #if there is a row below
+                    if row!= row_length:
+                        
+                        #if available bring them to tables
+                        if list_of_tables[row+1][table].availability(): #bottom
+                            return Bring_Big_Group_To_Tables(customer,row+1,table)
+                    
+                    #if there is a column on the left
+                    if table!=0:
+                        
+                        #if available bring them to tables
+                        if list_of_tables[row][table-1].availability(): #left
+                            return Bring_Big_Group_To_Tables(customer,row,table-1)
+                        
+                    #if there is a column on the right
+                    if table!=table_length:
+                        
+                        #if available bring them to tables
+                        if list_of_tables[row][table+1].availability: #right
+                            return Bring_Big_Group_To_Tables(customer,row,table+1)
+            
+            #if there are no boundary
+            else:
+                
+                #if available combine with table above
+                if list_of_tables[row-1][table].availability: #top
+                    return Bring_Big_Group_To_Tables(customer,row-1,table)
+                
+                #if available combine with table below
+                if list_of_tables[row+1][table].availability: #bottom
+                    return Bring_Big_Group_To_Tables(customer,row+1,table)
+                
+                #if available combine with table on the left
+                if list_of_tables[row][table-1].availability: #left
+                    return Bring_Big_Group_To_Tables(customer,row,table-1)
+                
+                #if available combine with table on the right
+                if list_of_tables[row][table+1].availability: #right
+                    return Bring_Big_Group_To_Tables(customer,row,table+1)
+                
+                #if no table available
+                else:
+                    return False
 
+# ---------------------- General Function: Bring_Big_Group_To_Tables ----------------------
+# Check_Table_Next_To_It support function           
+def Bring_Big_Group_To_Tables(customer,row,table):   
+    # set table to occupied
+    list_of_tables[row][table].state = "Occupied"
+    customer.state = "Order"
+    customer.waiting_time += time_step
+    #add another table next to the assigned table
+    customer.tableNumber.append(list_of_tables[row][table].tableNumber)
+    list_of_customers.append(customer)
+    #remove customer from the waitlist
+    list_of_people_in_line.remove(customer)                  
+    return True        
 
+# ---------------------- General Function: eating_food ----------------------
 #check customer eating time
 def eating_food():
     
@@ -300,7 +383,8 @@ def eating_food():
                             check_table = list_of_tables[row][table].tableNumber
                             if customer_table==check_table:
                                 list_of_tables[row][table].state = "Empty"
-        
+     
+# ------------------------ General Function: order_food -----------------------
 def order_food():
     
     # Loops through the list of customers and check to see if the customer is ordering
@@ -321,6 +405,7 @@ def order_food():
                 people.waiting_time += prep_time[0]
                 people.state = "Served"
 
+# ------------------------ General Function: operations -----------------------
 def operations():
     
     restaurant = Restaurant()
@@ -377,7 +462,8 @@ def operations():
                                 else:
                                     customer.tableNumber.append(temp.tableNumber)
                                     temp.state = "Occupied"
-                                    is_table_available = find_extra_table(customer)
+                                    #is_table_available = find_extra_table(customer)
+                                    is_table_available = Check_Table_Next_To_It(customer,temp)
                                     if is_table_available == False:
                                         print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
                                         priority_list.append(customer)
@@ -403,7 +489,8 @@ def operations():
                 list_of_people_in_line.append(createCustomer())
                 for i in list_of_people_in_line:
                     total_number_of_customers_in_line = total_number_of_customers_in_line + i.number_of_people
-        
+        # if number of customer exceeded the maximum capacity, stop taking in customer
+        # 
         if total_number_of_customers_in_line > MAXIMUM_CAPACITY and len(list_of_people_in_line) > 0:
             total_number_of_customers_in_line = total_number_of_customers_in_line - list_of_people_in_line[-1].number_of_people
             list_of_people_in_line[-1].state = "Unserved"
@@ -456,7 +543,8 @@ def operations():
     average_time_in_restaurant.append(round(np.average(average_time)))
     average_revenue.append(revenue)
     average_lost_revenue.append(lost_revenue)
-    
+ 
+# ------------------------- General Function: visual --------------------------
 def visuals():
     
     # wait time for customers throughout the day
@@ -487,6 +575,7 @@ def visuals():
     
     print("Total Lost Revenue:", np.average(average_lost_revenue), "Dollars")
 
+# ------------------------- General Function: reset ---------------------------
 def reset():
     
     global list_of_people_in_line
@@ -514,13 +603,15 @@ def reset():
     list_of_people_in_line = []
     list_of_tables = []
     payment = []
-    
+
+# ---------------------- General Function: simulationDriver ------------------  
 def simulationDriver():
     
     initialization()
     operations()
     reset()
 
+# ------------------ General Function: multiplesimulationDriver ---------------
 def multipleSimulationDriver(num):
     for i in range(num):
         simulationDriver()
