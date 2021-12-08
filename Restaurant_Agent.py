@@ -40,14 +40,17 @@ prep_time = [12,10,15] # the amount of time it take to make each meal
 food_cost = [15,12,20] # the cost of each food
 
 # List of variables
-
+total_takeout=0
+takeout_payment=0
 total_number_of_customers = 0
 lost_customers = 0
 list_of_tables = [] # list to keep track of table
 list_of_customers = [] # list to keep track of group
 list_of_people_in_line = []
+list_of_people_in_line_take_out = [] 
 priority_list = []
 preoccupied_table = []
+
 operating_hours = BEGINNING_HOURS_IN_MINUTES
 revenue = 0 # init revenue
 lost_revenue = 0 # revenue lost by not being meet customer demand
@@ -63,17 +66,42 @@ average_number_of_lost_customers = [] # Average number of lost customers
 average_time_in_restaurant = [] # Average time in restaurant
 average_revenue = [] # Average revenue
 average_lost_revenue = [] # Average lost revenue
-
+average_takeout_revenue= []
 # Elements that can be changed to affect results
-
+OrderID= 1
 chairs = 4 # init chairs
 MAXIMUM_WAITING_TIME = 120 # minutes
 MAXIMUM_EATING_TIME = 60 # minutes
 MAXIMUM_CAPACITY = 150 # maximum customer can be in restaurant
 probability_of_large_group = 0.20
 beginning_number_of_customers = 12
+probability_of_takeout_normal_hour=0.20
+probability_of_takeout_dinner_lunch_hour = 0.50
+probability_of_takeout_for_self = 0.70
+probability_of_take_for_family = 0.20
 TABLES = 9 # init tables
-
+class Takeout_Customer(object):
+    
+    """
+    
+    This class stores the information for each of the customer objects
+    
+    Each takeout customer has:
+        - state (whether the customer has order, waiting, prepared, served)
+        - takeout_order - what the customer orders togo
+        - waiting_time - time waiting for food 
+        - estimate_waiting_time - time waiting for food to be prepare       
+        
+    """
+    
+    def __init__(self,takeout_order,orderID):
+        self.orderID = orderID
+        self.state= "Waiting"
+        self.takeout_order= takeout_order
+        self.waiting_time = 0
+        self.estimate_waiting_time = 0
+    
+        
 # ------------------------------ Class: Customer ------------------------------ 
 class Customer(object):
     """
@@ -204,11 +232,18 @@ def initialization():
         customer 
         - 2D array of table objects
     """
-    
+    global OrderID
     # create the beginning number of customers in line
     for i in range(beginning_number_of_customers):
         customer = createCustomer()
         list_of_people_in_line.append(customer)
+    
+    for j in range(beginning_number_of_customers):
+        rand = random.randint(0, 2)
+        if rand == 1:
+            takeout_customer = create_takeout_Customer(OrderID)
+            OrderID+=1
+            list_of_people_in_line_take_out.append(takeout_customer)
     
     global list_of_tables
     
@@ -232,7 +267,17 @@ def initialization():
         raise ValueError("Choose a different number of tables")
     
     list_of_tables = tab
-    
+
+def create_takeout_Customer(OrderID):
+    takeout_order=[]    
+    for i in range(5):        
+        rand  = random.randint(0, 2)
+        if rand == 1:
+            takeout_order.append(menu[random.randint(0, 2)])
+    if not takeout_order:
+        takeout_order.append(menu[random.randint(0, 2)])
+    return Takeout_Customer(takeout_order,OrderID)
+
 # ---------------------- General Function: createCustomer ---------------------
 def createCustomer():
     
@@ -254,7 +299,41 @@ def createCustomer():
         eating_time = random.randint(15, 45)
     #Create customer        
     return Customer(food_order, number_of_people, eating_time)
- 
+
+def prepare_take_out():
+    global total_takeout
+    for customer in list_of_people_in_line_take_out:
+        if customer.state == "Ordered":
+            customer.waiting_time+=time_step
+            if customer.waiting_time == customer.estimate_waiting_time:
+                customer.state = "Served"
+                #served_customer+= 1
+                total_takeout+=1
+                print("Take out order number",customer.orderID,"with",len(customer.takeout_order),"items ready")
+                list_of_people_in_line_take_out.remove(customer)
+def check_for_takeout_food():
+    #if list is not empty
+    global takeout_payment
+    if list_of_people_in_line_take_out:
+        for customer in list_of_people_in_line_take_out:
+            if customer.state == "Waiting":
+                for food in customer.takeout_order:
+                    if food == "Steak":
+                        #payment.append(food_cost[2])
+                        takeout_payment+=food_cost[2]
+                        customer.estimate_waiting_time += prep_time[2]
+                        
+                    if food == "Pizza":
+                        #payment.append(food_cost[1])
+                        takeout_payment+=food_cost[1]
+                        customer.estimate_waiting_time += prep_time[1]
+                        
+                    if food == "Hamburger":
+                        #payment.append(food_cost[0])
+                        takeout_payment+=food_cost[0]
+                        customer.estimate_waiting_time += prep_time[0]
+                customer.state = "Ordered"
+                       
 # ---------------------- General Function: find_extra_table -------------------
 def find_extra_table(customer):
     
@@ -298,28 +377,28 @@ def Check_Table_Next_To_It(customer,temp_table):
                     
                 #if there is a row above
                 if row!=0:
-                    print("first row and table + table number",row,table,temp_table)    
+                    #print("first row and table + table number",row,table,temp_table)    
                     #if available bring them to tables
                     if list_of_tables[row-1][table].availability(): #top
                         return Bring_Big_Group_To_Tables(customer,row-1,table)
                     
                 #if there is a row below
                 if row!= row_length:
-                    print("last row and table + table number",row,table,temp_table)     
+                    #print("last row and table + table number",row,table,temp_table)     
                     #if available bring them to tables
                     if list_of_tables[row+1][table].availability(): #bottom
                         return Bring_Big_Group_To_Tables(customer,row+1,table)
                     
                 #if there is a column on the left
                 if table!=0:
-                    print("first table and row + table number",row,table,temp_table)     
+                    #print("first table and row + table number",row,table,temp_table)     
                     #if available bring them to tables
                     if list_of_tables[row][table-1].availability(): #left
                         return Bring_Big_Group_To_Tables(customer,row,table-1)
                         
                 #if there is a column on the right
                 if table!=table_length:
-                    print("last table and row + table number",row,table,temp_table)     
+                    #print("last table and row + table number",row,table,temp_table)     
                     #if available bring them to tables
                     if list_of_tables[row][table+1].availability: #right
                         return Bring_Big_Group_To_Tables(customer,row,table+1)
@@ -422,9 +501,11 @@ def operations():
     global revenue
     global lost_revenue
     global total_number_of_customers_in_line
-    
+    global OrderID
     while (operating_hours != ENDING_HOURS_IN_MINUTES):
-        
+        if list_of_people_in_line_take_out:
+            check_for_takeout_food()
+            prepare_take_out()
         if restaurant.availableTables() > 0:
         
             for i in range(len(list_of_tables)):
@@ -494,6 +575,10 @@ def operations():
         # Customers geneally come into the resturant throughout the duration of operating hours
         if (operating_hours % 15) == 0:
             list_of_people_in_line.append(createCustomer())
+            rand = np.random.random()
+            if rand < probability_of_takeout_normal_hour:
+                list_of_people_in_line_take_out.append(create_takeout_Customer(OrderID))
+                OrderID+=1
             #for i in list_of_people_in_line:
             for i in list_of_people_in_line:
                 total_number_of_customers_in_line = total_number_of_customers_in_line + i.number_of_people
@@ -501,6 +586,10 @@ def operations():
         # Lunch and dinner
         elif (operating_hours == 120 or operating_hours == 480):
             rand = np.random.randint(5, 10)
+            takeout_rand = random.random()
+            if takeout_rand < probability_of_takeout_dinner_lunch_hour:
+                list_of_people_in_line_take_out.append.append(create_takeout_Customer())
+                OrderID+=1
             for i in range(rand):
                 list_of_people_in_line.append(createCustomer())
                 for i in list_of_people_in_line:
@@ -552,7 +641,7 @@ def operations():
                 lost_revenue = lost_revenue + food_cost[1] * customer.number_of_people
             if order == "Hamburger":
                 lost_revenue = lost_revenue + food_cost[0] * customer.number_of_people
-                
+    average_takeout_revenue.append(takeout_payment)           
     average_number_of_customers.append(total_number_of_customers)
     average_number_of_served_customers.append(served_customer)
     average_number_of_lost_customers.append(lost_customers)
@@ -590,6 +679,10 @@ def visuals():
     print("Total Revenue:", np.average(average_revenue), "Dollars")
     
     print("Total Lost Revenue:", np.average(average_lost_revenue), "Dollars")
+    
+    print("Total Takeout:",total_takeout)
+    
+    print("Total Takeout Revenue:",np.average(average_takeout_revenue), "Dollars")
 
 # ------------------------- General Function: reset ---------------------------
 def reset():
@@ -606,12 +699,15 @@ def reset():
     global list_of_tables
     global served_customer
     global payment
-    
+    global list_of_people_in_line_take_out
+    global takeout_payment 
+    list_of_people_in_line_take_out=0
     list_of_people_in_line = 0
     lost_customers = 0
     operating_hours = 0
     total_number_of_customers = 0
     revenue = 0
+    takeout_payment = 0
     lost_revenue = 0
     total_number_of_customers_in_line = 0
     served_customer = 0
@@ -619,6 +715,7 @@ def reset():
     list_of_people_in_line = []
     list_of_tables = []
     payment = []
+    list_of_people_in_line_take_out=[]
 
 # ---------------------- General Function: simulationDriver ------------------  
 def simulationDriver():
