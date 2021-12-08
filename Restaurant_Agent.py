@@ -291,39 +291,41 @@ def Check_Table_Next_To_It(customer,temp_table):
             row_length=len(list_of_tables)-1
             table_length=len(list_of_tables[row])-1
             # find empty tables around the current table
-            if list_of_tables[row][table].tableNumber== temp_table.tableNumber:
+            if list_of_tables[row][table].tableNumber== temp_table:
                 
                 #if table fall in any of the condition
-                if row==0 or row==row_length or table==0 or table==table_length:
+                #if row==0 or row==row_length or table==0 or table==table_length:
                     
-                    #if there is a row above
-                    if row!=0:
-                        
-                        #if available bring them to tables
-                        if list_of_tables[row-1][table].availability(): #top
-                            return Bring_Big_Group_To_Tables(customer,row-1,table)
-                    #if there is a row below
-                    if row!= row_length:
-                        
-                        #if available bring them to tables
-                        if list_of_tables[row+1][table].availability(): #bottom
-                            return Bring_Big_Group_To_Tables(customer,row+1,table)
+                #if there is a row above
+                if row!=0:
+                    print("first row and table + table number",row,table,temp_table)    
+                    #if available bring them to tables
+                    if list_of_tables[row-1][table].availability(): #top
+                        return Bring_Big_Group_To_Tables(customer,row-1,table)
                     
-                    #if there is a column on the left
-                    if table!=0:
+                #if there is a row below
+                if row!= row_length:
+                    print("last row and table + table number",row,table,temp_table)     
+                    #if available bring them to tables
+                    if list_of_tables[row+1][table].availability(): #bottom
+                        return Bring_Big_Group_To_Tables(customer,row+1,table)
+                    
+                #if there is a column on the left
+                if table!=0:
+                    print("first table and row + table number",row,table,temp_table)     
+                    #if available bring them to tables
+                    if list_of_tables[row][table-1].availability(): #left
+                        return Bring_Big_Group_To_Tables(customer,row,table-1)
                         
-                        #if available bring them to tables
-                        if list_of_tables[row][table-1].availability(): #left
-                            return Bring_Big_Group_To_Tables(customer,row,table-1)
-                        
-                    #if there is a column on the right
-                    if table!=table_length:
-                        
-                        #if available bring them to tables
-                        if list_of_tables[row][table+1].availability: #right
-                            return Bring_Big_Group_To_Tables(customer,row,table+1)
-            
+                #if there is a column on the right
+                if table!=table_length:
+                    print("last table and row + table number",row,table,temp_table)     
+                    #if available bring them to tables
+                    if list_of_tables[row][table+1].availability: #right
+                        return Bring_Big_Group_To_Tables(customer,row,table+1)
+                return False
             #if there are no boundary
+            """
             else:
                 
                 #if available combine with table above
@@ -343,9 +345,10 @@ def Check_Table_Next_To_It(customer,temp_table):
                     return Bring_Big_Group_To_Tables(customer,row,table+1)
                 
                 #if no table available
+                
                 else:
                     return False
-
+                """
 # ---------------------- General Function: Bring_Big_Group_To_Tables ----------------------
 # Check_Table_Next_To_It support function           
 def Bring_Big_Group_To_Tables(customer,row,table):   
@@ -357,7 +360,10 @@ def Bring_Big_Group_To_Tables(customer,row,table):
     customer.tableNumber.append(list_of_tables[row][table].tableNumber)
     list_of_customers.append(customer)
     #remove customer from the waitlist
-    list_of_people_in_line.remove(customer)                  
+    try:
+        list_of_people_in_line.remove(customer)  
+    except ValueError:
+        print("Customer is already removed")                   
     return True        
 
 # ---------------------- General Function: eating_food ----------------------
@@ -429,6 +435,7 @@ def operations():
                         # check the priority list
                         # if it is not empty get the next customer
                         if len(priority_list) > 0:
+                            """
                             customer = priority_list[0]
                             print("next group of",customer.number_of_people,"from the priority list")      
                             # add the next available table next to the assigned table                            
@@ -439,7 +446,16 @@ def operations():
                             list_of_customers.append(customer)
                             list_of_tables[i][j].state= "Occupied"                                                     
                             priority_list.remove(customer)
-                                                        
+                            """
+                            
+                            customer = priority_list[0]
+                            is_table_available = Check_Table_Next_To_It(customer,customer.tableNumber[0])
+                            if is_table_available:
+                                print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+                                priority_list.remove(customer)
+                            else:
+                                pass
+                            
                         # if the priority list is empty                       
                         else:  
                             
@@ -463,12 +479,12 @@ def operations():
                                     customer.tableNumber.append(temp.tableNumber)
                                     temp.state = "Occupied"
                                     #is_table_available = find_extra_table(customer)
-                                    is_table_available = Check_Table_Next_To_It(customer,temp)
+                                    is_table_available = Check_Table_Next_To_It(customer,temp.tableNumber)
                                     if is_table_available == False:
                                         print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
                                         priority_list.append(customer)
                                         list_of_customers.append(customer)
-                                        list_of_people_in_line.remove(customer)
+                                        #list_of_people_in_line.remove(customer)
                                     else:
                                         print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
                                                                                                
@@ -495,7 +511,7 @@ def operations():
             total_number_of_customers_in_line = total_number_of_customers_in_line - list_of_people_in_line[-1].number_of_people
             list_of_people_in_line[-1].state = "Unserved"
             list_of_customers.append(list_of_people_in_line[-1])
-            lost_customers = lost_customers + i.number_of_people
+            lost_customers = lost_customers + list_of_people_in_line[-1].number_of_people
             list_of_people_in_line.remove(list_of_people_in_line[-1])
             
         
