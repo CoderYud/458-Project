@@ -68,6 +68,7 @@ average_time_in_restaurant = [] # Average time in restaurant
 average_revenue = [] # Average revenue
 average_lost_revenue = [] # Average lost revenue
 average_takeout_revenue = [] # Average takeout revenue
+average_takeout_customers = []
 
 # Elements that can be changed to affect results
 OrderID = 1
@@ -237,6 +238,7 @@ def initialization():
         - 2D array of table objects
     """
     global OrderID
+    
     # create the beginning number of customers in line
     for i in range(beginning_number_of_customers):
         customer = createCustomer()
@@ -584,12 +586,15 @@ def operations():
         eating_food()                                                   
         
         # Customers geneally come into the resturant throughout the duration of operating hours
-        if (operating_hours % random.randint(10, 15)) == 0:
-            list_of_people_in_line.append(createCustomer())
+        if (operating_hours % random.randint(10, customer_interval)) == 0:
             rand = np.random.random()
+            
             if rand < probability_of_takeout_normal_hour:
                 list_of_people_in_line_take_out.append(create_takeout_Customer(OrderID))
                 OrderID += 1
+            else:
+                list_of_people_in_line.append(createCustomer())
+                
             #for i in list_of_people_in_line:
             for i in list_of_people_in_line:
                 total_number_of_customers_in_line = total_number_of_customers_in_line + i.number_of_people
@@ -659,6 +664,7 @@ def operations():
     average_time_in_restaurant.append(round(np.average(average_time)))
     average_revenue.append(revenue)
     average_lost_revenue.append(lost_revenue)
+    average_takeout_customers.append(total_takeout)
  
 # ------------------------- General Function: visual --------------------------
 def visuals():
@@ -691,7 +697,7 @@ def visuals():
     
     print("Total Lost Revenue:", np.average(average_lost_revenue), "Dollars")
     
-    print("Total Takeout Orders:", total_takeout)
+    print("Total Takeout Orders:", np.average(average_takeout_customers))
     
     print("Total Takeout Revenue:", np.average(average_takeout_revenue), "Dollars")
     
@@ -714,6 +720,8 @@ def reset():
     global payment
     global list_of_people_in_line_take_out
     global takeout_payment 
+    global OrderID
+    global total_takeout
     
     list_of_people_in_line_take_out = 0
     list_of_people_in_line = 0
@@ -722,9 +730,12 @@ def reset():
     total_number_of_customers = 0
     revenue = 0
     takeout_payment = 0
+    total_takeout = 0
     lost_revenue = 0
     total_number_of_customers_in_line = 0
     served_customer = 0
+    OrderID = 1
+    
     list_of_customers = []
     list_of_people_in_line = []
     list_of_tables = []
