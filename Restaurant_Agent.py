@@ -73,17 +73,18 @@ average_takeout_customers = []
 # Elements that can be changed to affect results
 OrderID = 1
 chairs = 4 # init chairs
+TABLES = 9 # init tables
+probability_of_take_for_family = 0.30
+customer_interval = 15 # mins
 MAXIMUM_WAITING_TIME = 60 # minutes
 MAXIMUM_EATING_TIME = 60 # minutes
-MAXIMUM_CAPACITY = 150 # maximum customer can be in restaurant
+MAXIMUM_CAPACITY = 150 # maximum length of customer can be in the waiting line at a restaurant
 probability_of_large_group = 0.20
 beginning_number_of_customers = 12
 probability_of_takeout_normal_hour = 0.20
 probability_of_takeout_dinner_lunch_hour = 0.50
 probability_of_takeout_for_self = 0.70
-probability_of_take_for_family = 0.30
-TABLES = 9 # init tables
-customer_interval = 15 # mins
+
 # --------------------------- Class: Takeout_Customer -------------------------
 class Takeout_Customer(object):
     
@@ -573,31 +574,6 @@ def Check_Table_Next_To_It(customer,temp_table):
                         return Bring_Big_Group_To_Tables(customer,row,table+1)
                 return False
             
-            #if there are no boundary
-            """
-            else:
-                
-                #if available combine with table above
-                if list_of_tables[row-1][table].availability: #top
-                    return Bring_Big_Group_To_Tables(customer,row-1,table)
-                
-                #if available combine with table below
-                if list_of_tables[row+1][table].availability: #bottom
-                    return Bring_Big_Group_To_Tables(customer,row+1,table)
-                
-                #if available combine with table on the left
-                if list_of_tables[row][table-1].availability: #left
-                    return Bring_Big_Group_To_Tables(customer,row,table-1)
-                
-                #if available combine with table on the right
-                if list_of_tables[row][table+1].availability: #right
-                    return Bring_Big_Group_To_Tables(customer,row,table+1)
-                
-                #if no table available
-                
-                else:
-                    return False
-                """
 # --------------- General Function: Bring_Big_Group_To_Tables -----------------
 # Check_Table_Next_To_It support function           
 def Bring_Big_Group_To_Tables(customer,row,table):
@@ -769,18 +745,6 @@ def operations():
                         # if it is not empty, move on to customer on waitlist
                         if len(priority_list) > 0:
                             
-                            """
-                            customer = priority_list[0]
-                            print("next group of",customer.number_of_people,"from the priority list")      
-                            # add the next available table next to the assigned table                            
-                            customer.tableNumber.append(temp.tableNumber)
-                            customer.waiting_time += time_step
-                            customer.state = "Order"
-                            print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
-                            list_of_customers.append(customer)
-                            list_of_tables[i][j].state= "Occupied"                                                     
-                            priority_list.remove(customer)
-                            """
                             #Get the first customer in the waitlist
                             customer = priority_list[0]
                             
@@ -1025,21 +989,6 @@ def operations_option_2():
                             #Remove the customer from the priority list                                         
                             priority_list.remove(customer)
                           
-                            """
-                            #Get the first customer in the waitlist
-                            customer = priority_list[0]
-                            
-                            #Check if there is a table available
-                            is_table_available = Check_Table_Next_To_It(customer,customer.tableNumber[0])
-                            
-                            #If there is a table available, move them to the table
-                            #Remove the customer from the priority_list
-                            if is_table_available:
-                                print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
-                                priority_list.remove(customer)
-                            else:
-                                pass
-                           """ 
                         # if the priority list is empty                       
                         else:  
                             
@@ -1183,6 +1132,7 @@ def operations_option_2():
     average_revenue.append(revenue) # Average revenue
     average_lost_revenue.append(lost_revenue) # Average lost revenue
     average_takeout_customers.append(total_takeout) # Average # of takeout customer
+    
 # ------------------------- General Function: visual --------------------------
 def visuals():
     """
@@ -1192,20 +1142,6 @@ def visuals():
         - Print out the average for each metric
     """
     
-        
-    # wait time for customers throughout the day
-    
-    # num_of_customers = []
-    
-    # for i in range(len(list_of_customers)):
-    #     num_of_customers.append(i)
-    
-    # waiting_times = []
-    
-    # for i in list_of_customers:
-    #     waiting_times.append(i.waiting_time)
-    
-    # plt.plot(num_of_customers, waiting_times)
     
 #--------------------------------------Output----------------------------------
     print("|-------------------------------------------------------------------------|")
@@ -1238,20 +1174,6 @@ def visuals_2():
         - Print out the average for each metric
     """
     
-        
-    # wait time for customers throughout the day
-    
-    # num_of_customers = []
-    
-    # for i in range(len(list_of_customers)):
-    #     num_of_customers.append(i)
-    
-    # waiting_times = []
-    
-    # for i in list_of_customers:
-    #     waiting_times.append(i.waiting_time)
-    
-    # plt.plot(num_of_customers, waiting_times)
     
 #--------------------------------------Output----------------------------------
     print("|-------------------------------------------------------------------------|")
@@ -1278,7 +1200,7 @@ def visuals_2():
 # ------------------------- General Function: reset ---------------------------
 def reset():
     """
-    Reset all variable and list at the end of the day
+    Reset all variable and list at the end of the run
     
     Variable and list:
         list_of_people_in_line - Keep track of customers in waitlist
@@ -1360,7 +1282,7 @@ def simulationDriver_option_2():
     """
     Description:
         - Set up and run the restaurant simulation with table can be anywhere. 
-        At the end of the, reset everything for a new day.
+        At the end of the, reset everything for a new run.
     Method:
         - initialization
         - operations_option_2
@@ -1377,6 +1299,15 @@ def simulationDriver_option_2():
     reset()
     
 def reset_average_list():
+    """
+    Description:
+        Resets all the average list after used
+        
+    Returns:
+        None
+    
+    """
+    
     global average_time # Average time in the restaurant waiting (time used for cooking food + time in queue)
     global average_number_of_customers # Average number of total customers
     global average_number_of_served_customers # Average number of customers served
@@ -1395,15 +1326,18 @@ def reset_average_list():
     average_revenue = [] # Average revenue
     average_lost_revenue = [] # Average lost revenue
     average_takeout_revenue = [] # Average takeout revenue
-    average_takeout_customers = []
+    average_takeout_customers = [] # Average number of takeout customers
+    
 # ------------------ General Function: multiplesimulationDriver ---------------
-def multipleSimulationDriver(num):
+
+def multipleSimulationDriver(num, condition):
     """    
     Run the simulation ahead of time to calculate any possible outcome and display
     it to the console
     
     Parameter:
-        num - the number of days
+        num - the number of runs 
+        condition - whether to use the method of combining any tables and comparing the data
         
     Method:
         simulationDriver
@@ -1413,16 +1347,15 @@ def multipleSimulationDriver(num):
     for i in range(num):
         simulationDriver()
     visuals()
-    reset_average_list()
-    for i in range(num):
-        simulationDriver_option_2()
-    visuals_2()
-    reset_average_list()
-
-# Total Reset - to erase all the functions and methods or add new lists
-
-# New method to find any available table. Then compare the results.
-
     
-#Call functions here
-multipleSimulationDriver(100)    
+    if condition == True:
+        reset_average_list()
+    
+        for i in range(num):
+            simulationDriver_option_2()
+            
+        visuals_2()
+        reset_average_list()
+
+# Call functions here
+multipleSimulationDriver(1000, True)    
