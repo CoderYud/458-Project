@@ -33,8 +33,6 @@ import matplotlib.pyplot as plt
 
 # Constant variables 
 
-RESTAURANT_WIDTH = 15 
-RESTAURANT_LENGTH = 15
 BEGINNING_HOURS_IN_MINUTES = 0 #time in minutes (10 am)
 ENDING_HOURS_IN_MINUTES = 720 #time in minutes (10 pm)
 menu = ["Hamburger","Pizza","Steak"] # Food menu
@@ -73,13 +71,13 @@ average_takeout_customers = [] # Average number of takeout customers
 
 # Elements that can be changed to affect results
 OrderID = 1
-chairs = 6 # init chairs
-TABLES = 15 # init tables
+chairs = 4 # init chairs
+TABLES = 9 # init tables
 probability_of_take_for_family = 0.30
 customer_interval = 15 # mins
 MAXIMUM_WAITING_TIME = 60 # minutes
 MAXIMUM_EATING_TIME = 60 # minutes
-MAXIMUM_CAPACITY = 500 # maximum length of customer can be in the waiting line at a restaurant
+MAXIMUM_CAPACITY = 150 # maximum length of customer can be in the waiting line at a restaurant
 probability_of_large_group = 0.20
 beginning_number_of_customers = 12
 probability_of_takeout_normal_hour = 0.20
@@ -195,8 +193,6 @@ class Restaurant(object):
         - tables - list of tables
     """
     def __init__(self):
-        self.restaurant_width = RESTAURANT_WIDTH
-        self.restaurant_length = RESTAURANT_LENGTH
         self.tables = list_of_tables
 
 # ---------------------- Class Function: availableTables ----------------------   
@@ -373,7 +369,7 @@ def createCustomer():
     
     #Set the probability for having a big group
     if probability_of_large_group > rand:
-        number_of_people = random.randint(4, 6)
+        number_of_people = random.randint(5, 6)
     else:
         number_of_people = random.randint(1, 4)
         
@@ -1356,4 +1352,71 @@ def multipleSimulationDriver(num, condition):
         reset_average_list()
 
 # Call functions here
-multipleSimulationDriver(1000, True)    
+multipleSimulationDriver(10, True)
+
+# ------------------ General Function: Testing -------------------------------
+def TestingCustomerObject():
+    customer = createCustomer()
+    customer.toString()    
+
+# ------------------ General Function: Testing -------------------------------
+def TestingRestaurantObject():
+    
+    initialization()
+    restaurant = Restaurant()
+    print(restaurant.availableTables())
+
+# ------------------ General Function: Testing -------------------------------
+def TestTables():
+    
+    initialization()
+    for i in range(len(list_of_tables)):
+        for j in range(len(list_of_tables[i])):
+            if list_of_tables[i][j].availability() == True:
+                print("Table", list_of_tables[i][j].tableNumber, "is available")
+    
+# ------------------ General Function: Testing -------------------------------
+def TestTakeOut():
+    
+    count = 1
+    test_take_out=[]
+    for i in range(10):
+        rand = random.randint(0,2)
+        food = menu[rand]
+        takeout = Takeout_Customer(food,count)
+        takeout.estimate_waiting_time += prep_time[rand]
+        test_take_out.append(takeout)
+        count+=1
+
+    while(len(test_take_out) != 0):
+
+        for customer in test_take_out:
+            if customer.state == "Waiting":
+                customer.waiting_time+=1
+                if customer.waiting_time==customer.estimate_waiting_time:
+                    print("The order is given")
+                    test_take_out.remove(customer)
+   
+# ------------------ General Function: Testing -------------------------------    
+def TestCustomerTraffic():
+    
+    orderID = 1
+    operating_hours = 0
+    while operating_hours != ENDING_HOURS_IN_MINUTES:
+        
+        if operating_hours % (random.randint(10, 15)):
+            rand = random.random()
+            if rand < probability_of_takeout_normal_hour:
+                rand = random.randint(0, 2)
+                list_of_people_in_line_take_out.append(Takeout_Customer(rand, orderID))
+                orderID = orderID + 1
+            else: 
+                list_of_people_in_line.append(createCustomer())
+        
+        operating_hours = operating_hours + 10
+        
+    print(len(list_of_people_in_line))
+    print(len(list_of_people_in_line_take_out))
+    
+    for i in range(len(list_of_people_in_line_take_out)):
+        print(list_of_people_in_line_take_out[i].orderID)
