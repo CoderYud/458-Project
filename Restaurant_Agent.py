@@ -98,6 +98,7 @@ class Takeout_Customer(object):
     """
     
     def __init__(self,takeout_order,orderID):
+        self.number_of_people = 1
         self.orderID = orderID
         self.state= "Waiting"
         self.takeout_order= takeout_order
@@ -417,7 +418,7 @@ def prepare_take_out():
                 total_takeout+=1
                 
                 #The order is ready for the customer
-                print("Take out order number",customer.orderID,"with",len(customer.takeout_order),"items ready")
+                #print("Take out order number",customer.orderID,"with",len(customer.takeout_order),"items ready")
                 
                 #Remove the customer from the takeout list
                 list_of_people_in_line_take_out.remove(customer)
@@ -630,7 +631,8 @@ def Bring_Big_Group_To_Tables(customer,row,table):
     try:
         list_of_people_in_line.remove(customer)  
     except ValueError:
-        print("Customer is already removed")                   
+        #print("Customer is already removed")
+        pass                   
     return True        
 
 # ---------------------- General Function: eating_food ----------------------
@@ -788,7 +790,7 @@ def operations():
                             #If there is a table available, move them to the table
                             #Remove the customer from the priority_list
                             if is_table_available:
-                                print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+                                #print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
                                 priority_list.remove(customer)
                             else:
                                 pass
@@ -810,7 +812,7 @@ def operations():
                                     customer.state = "Order"
                                     list_of_customers.append(customer)
                                     list_of_people_in_line.remove(customer)   
-                                    print("next group of",customer.number_of_people,"to table",customer.tableNumber) 
+                                    #print("next group of",customer.number_of_people,"to table",customer.tableNumber) 
                                                               
                                 #If the number of customer is greater than the number of chairs in a table
                                 else:
@@ -826,14 +828,15 @@ def operations():
                                     #If there are no available tables
                                     #Move the customer to the priority list
                                     if is_table_available == False:
-                                        print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
+                                        #print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
                                         priority_list.append(customer)
                                         list_of_customers.append(customer)
                                         #list_of_people_in_line.remove(customer)
                                     #If there are available tables next to it
                                     #Move customer to one of the available tables
                                     else:
-                                        print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+                                        pass
+                                        #print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
         #Customer will order food                                                                                       
         order_food()
         
@@ -900,8 +903,7 @@ def operations():
             average_time.append(i.time_in_restaurant + i.waiting_time)
     
     # Increment the total number of customer in restaurant          
-    for i in list_of_customers:
-        total_number_of_customers = total_number_of_customers + i.number_of_people
+    total_number_of_customers = served_customer + lost_customers + total_takeout
     
     # Once the resturant close, check the waitlist and update lost customer
     if len(list_of_people_in_line) > 0:        
@@ -1006,18 +1008,19 @@ def operations_option_2():
                             #Get the first customer in the waitlist
                             #Call the customer to the table
                             customer = priority_list[0]
-                            print("next group of",customer.number_of_people,"from the priority list")      
+                            #print("next group of",customer.number_of_people,"from the priority list")      
                             # add the next available table next to the assigned table                            
                             customer.tableNumber.append(temp.tableNumber)
                             customer.waiting_time += time_step
                             customer.state = "Order"
-                            print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+                            #print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
                             #list_of_customers.append(customer)
                             list_of_tables[i][j].state= "Occupied"            
                             try:
                                 list_of_people_in_line.remove(customer)  
                             except ValueError:
-                                print("Customer is already removed")                   
+                                pass
+                                #print("Customer is already removed")                   
                             
                             #Remove the customer from the priority list                                         
                             priority_list.remove(customer)
@@ -1054,7 +1057,7 @@ def operations_option_2():
                                     customer.state = "Order"
                                     list_of_customers.append(customer)
                                     list_of_people_in_line.remove(customer)   
-                                    print("next group of",customer.number_of_people,"to table",customer.tableNumber) 
+                                    #print("next group of",customer.number_of_people,"to table",customer.tableNumber) 
                                                               
                                 #If the number of customer is greater than the number of chairs in a table
                                 else:
@@ -1071,14 +1074,15 @@ def operations_option_2():
                                     #If there are no available tables
                                     #Move the customer to the priority list
                                     if is_table_available == False:
-                                        print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
+                                        #print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
                                         priority_list.append(customer)
                                         list_of_customers.append(customer)
                                         #list_of_people_in_line.remove(customer)
                                     #If there are available tables next to it
                                     #Move customer to one of the available tables
                                     else:
-                                        print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+                                        pass
+                                        #print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
         #Customer will order food                                                                                       
         order_food()
         
@@ -1145,9 +1149,8 @@ def operations_option_2():
             average_time.append(i.time_in_restaurant + i.waiting_time)
     
     # Increment the total number of customer in restaurant          
-    for i in list_of_customers:
-        total_number_of_customers = total_number_of_customers + i.number_of_people
-    
+    total_number_of_customers = served_customer + lost_customers + total_takeout
+     
     # Once the resturant close, check the waitlist and update lost customer
     if len(list_of_people_in_line) > 0:        
         for person in list_of_people_in_line:
@@ -1183,9 +1186,10 @@ def operations_option_2():
 # ------------------------- General Function: visual --------------------------
 def visuals():
     """
-    
-    Display the average calculation for each metric into the console
-    
+    Description:
+        - Display the average calculation for each metric into the console
+    Output:
+        - Print out the average for each metric
     """
     
         
@@ -1228,9 +1232,10 @@ def visuals():
 
 def visuals_2():
     """
-    
-    Display the average calculation for each metric into the console
-    
+    Description:
+        - Display the average calculation for each metric into the console
+    Output:
+        - Print out the average for each metric
     """
     
         
@@ -1371,9 +1376,27 @@ def simulationDriver_option_2():
     #Reset everything
     reset()
     
+def reset_average_list():
+    global average_time # Average time in the restaurant waiting (time used for cooking food + time in queue)
+    global average_number_of_customers # Average number of total customers
+    global average_number_of_served_customers # Average number of customers served
+    global average_number_of_lost_customers # Average number of lost customers
+    global average_time_in_restaurant # Average time in restaurant
+    global average_revenue # Average revenue
+    global average_lost_revenue # Average lost revenue
+    global average_takeout_revenue  # Average takeout revenue
+    global average_takeout_customers 
     
+    average_time = [] # Average time in the restaurant waiting (time used for cooking food + time in queue)
+    average_number_of_customers = [] # Average number of total customers
+    average_number_of_served_customers = [] # Average number of customers served
+    average_number_of_lost_customers = [] # Average number of lost customers
+    average_time_in_restaurant = [] # Average time in restaurant
+    average_revenue = [] # Average revenue
+    average_lost_revenue = [] # Average lost revenue
+    average_takeout_revenue = [] # Average takeout revenue
+    average_takeout_customers = []
 # ------------------ General Function: multiplesimulationDriver ---------------
-
 def multipleSimulationDriver(num):
     """    
     Run the simulation ahead of time to calculate any possible outcome and display
@@ -1390,11 +1413,11 @@ def multipleSimulationDriver(num):
     for i in range(num):
         simulationDriver()
     visuals()
-    """
+    reset_average_list()
     for i in range(num):
         simulationDriver_option_2()
     visuals_2()
-    """
+    reset_average_list()
 
 # Total Reset - to erase all the functions and methods or add new lists
 
@@ -1402,4 +1425,4 @@ def multipleSimulationDriver(num):
 
     
 #Call functions here
-multipleSimulationDriver(10)    
+multipleSimulationDriver(100)    
