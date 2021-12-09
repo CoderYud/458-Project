@@ -1351,32 +1351,80 @@ def multipleSimulationDriver(num, condition):
         visuals_2()
         reset_average_list()
 
-# Call functions here
-multipleSimulationDriver(10, True)
+# ------------------ General Function: Testing -------------------------------
+def TestRunner():
+    """
+    
+    Runs all the test
+    
+    """
+    TestingCustomerObject()
+    TestingRestaurantObject()
+    TestTables()
+    TestTakeOut()
+    TestCustomerTraffic()
 
 # ------------------ General Function: Testing -------------------------------
 def TestingCustomerObject():
+    """
+    
+    Test creating a Customer class object
+    
+    Output should include the order, number of people, wait time and how long
+    it takes to eat thier food
+
+    """
     customer = createCustomer()
     customer.toString()    
 
 # ------------------ General Function: Testing -------------------------------
 def TestingRestaurantObject():
+    """
+    
+    Test to see how many tables are available
+    
+    Should return an int that reflects the same number of tables as the global variable for tables
+    
+    """
     
     initialization()
     restaurant = Restaurant()
     print(restaurant.availableTables())
+    reset()
 
 # ------------------ General Function: Testing -------------------------------
 def TestTables():
+    
+    """
+    
+    Test to see which tables are available
+    
+    Output:
+        Should return Table + "TableNumber" + is available
+        Table 1 is available 
+    
+    """
     
     initialization()
     for i in range(len(list_of_tables)):
         for j in range(len(list_of_tables[i])):
             if list_of_tables[i][j].availability() == True:
                 print("Table", list_of_tables[i][j].tableNumber, "is available")
+    reset()
     
 # ------------------ General Function: Testing -------------------------------
 def TestTakeOut():
+    
+    """
+    
+    Test that a takeout customer receives their order after a certain length of time
+    
+    Output:
+        Should show a print statement that says the order is given
+        EX:
+            "The order is given"
+    
+    """
     
     count = 1
     test_take_out=[]
@@ -1399,6 +1447,14 @@ def TestTakeOut():
    
 # ------------------ General Function: Testing -------------------------------    
 def TestCustomerTraffic():
+    """
+    
+    Randomly generates a list of customers that want to either dine-in or do takeout
+    if the customer wants takeout, then we can show their Order ID and what they ordered
+    
+    
+
+    """
     
     orderID = 1
     operating_hours = 0
@@ -1415,8 +1471,17 @@ def TestCustomerTraffic():
         
         operating_hours = operating_hours + 10
         
-    print(len(list_of_people_in_line))
-    print(len(list_of_people_in_line_take_out))
+    print("Dine-In Customers:", len(list_of_people_in_line))
+    print("Number of takeout:", len(list_of_people_in_line_take_out))
     
     for i in range(len(list_of_people_in_line_take_out)):
-        print(list_of_people_in_line_take_out[i].orderID)
+        print(list_of_people_in_line_take_out[i].orderID, menu[list_of_people_in_line_take_out[i].takeout_order])
+    
+    reset()
+        
+# Call functions here
+
+# multipleSimulationDriver runs the code
+# TestRunner calls all the test functions
+multipleSimulationDriver(10, True)
+# TestRunner()
