@@ -21,6 +21,7 @@ For example, a hamburger can be cooked between 10 - 12 mins.
 - If restaurant reaches max capacity inside the restaurant, the last person in queue needs to leave 
 because there is no more room inside the restaurant
 - Customers in a group order the same food
+- The average wait time includes waiting in line and waiting for a customer’s food to be served to them
 
 """
 
@@ -41,7 +42,7 @@ prep_time = [12,10,15] # the amount of time it take to make each meal
 food_cost = [15,12,20] # the cost of each food
 
 # List of variables
-total_takeout=0
+total_takeout = 0
 takeout_payment=0
 total_number_of_customers = 0
 lost_customers = 0
@@ -68,17 +69,17 @@ average_time_in_restaurant = [] # Average time in restaurant
 average_revenue = [] # Average revenue
 average_lost_revenue = [] # Average lost revenue
 average_takeout_revenue = [] # Average takeout revenue
-average_takeout_customers = []
+average_takeout_customers = [] # Average number of takeout customers
 
 # Elements that can be changed to affect results
 OrderID = 1
-chairs = 4 # init chairs
-TABLES = 9 # init tables
+chairs = 6 # init chairs
+TABLES = 15 # init tables
 probability_of_take_for_family = 0.30
 customer_interval = 15 # mins
 MAXIMUM_WAITING_TIME = 60 # minutes
 MAXIMUM_EATING_TIME = 60 # minutes
-MAXIMUM_CAPACITY = 150 # maximum length of customer can be in the waiting line at a restaurant
+MAXIMUM_CAPACITY = 500 # maximum length of customer can be in the waiting line at a restaurant
 probability_of_large_group = 0.20
 beginning_number_of_customers = 12
 probability_of_takeout_normal_hour = 0.20
@@ -417,9 +418,7 @@ def prepare_take_out():
                 #served_customer+= 1
                 #Increnemt the number of takeout customer by one
                 total_takeout+=1
-                
-                #The order is ready for the customer
-                #print("Take out order number",customer.orderID,"with",len(customer.takeout_order),"items ready")
+
                 
                 #Remove the customer from the takeout list
                 list_of_people_in_line_take_out.remove(customer)
@@ -547,28 +546,28 @@ def Check_Table_Next_To_It(customer,temp_table):
                     
                 #if there is a row above
                 if row!=0:
-                    #print("first row and table + table number",row,table,temp_table)    
+
                     #if available bring them to tables
                     if list_of_tables[row-1][table].availability(): #top
                         return Bring_Big_Group_To_Tables(customer,row-1,table)
                     
                 #if there is a row below
                 if row!= row_length:
-                    #print("last row and table + table number",row,table,temp_table)     
+   
                     #if available bring them to tables
                     if list_of_tables[row+1][table].availability(): #bottom
                         return Bring_Big_Group_To_Tables(customer,row+1,table)
                     
                 #if there is a column on the left
                 if table!=0:
-                    #print("first table and row + table number",row,table,temp_table)     
+    
                     #if available bring them to tables
                     if list_of_tables[row][table-1].availability(): #left
                         return Bring_Big_Group_To_Tables(customer,row,table-1)
                         
                 #if there is a column on the right
                 if table!=table_length:
-                    #print("last table and row + table number",row,table,temp_table)     
+   
                     #if available bring them to tables
                     if list_of_tables[row][table+1].availability: #right
                         return Bring_Big_Group_To_Tables(customer,row,table+1)
@@ -633,11 +632,11 @@ def eating_food():
             #increment eating time by one every minutes
             customer.time_in_restaurant+=time_step
             
-            #print(people.time_in_restaurant,people.eating_time)
+ 
             #if the time spend in restaurant is equal to approximate eating time
             #set customer to done eating
             if customer.time_in_restaurant == customer.eating_time:
-                #print(people.time_in_restaurant)
+ 
                 customer.state = "Paid"
                 served_customer = served_customer + customer.number_of_people
                 
@@ -754,7 +753,7 @@ def operations():
                             #If there is a table available, move them to the table
                             #Remove the customer from the priority_list
                             if is_table_available:
-                                #print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+ 
                                 priority_list.remove(customer)
                             else:
                                 pass
@@ -776,7 +775,7 @@ def operations():
                                     customer.state = "Order"
                                     list_of_customers.append(customer)
                                     list_of_people_in_line.remove(customer)   
-                                    #print("next group of",customer.number_of_people,"to table",customer.tableNumber) 
+                                    
                                                               
                                 #If the number of customer is greater than the number of chairs in a table
                                 else:
@@ -791,16 +790,15 @@ def operations():
                                     
                                     #If there are no available tables
                                     #Move the customer to the priority list
-                                    if is_table_available == False:
-                                        #print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
+                                    if is_table_available == False:                                 
                                         priority_list.append(customer)
                                         list_of_customers.append(customer)
-                                        #list_of_people_in_line.remove(customer)
+                      
                                     #If there are available tables next to it
                                     #Move customer to one of the available tables
                                     else:
                                         pass
-                                        #print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+                                        
         #Customer will order food                                                                                       
         order_food()
         
@@ -972,12 +970,12 @@ def operations_option_2():
                             #Get the first customer in the waitlist
                             #Call the customer to the table
                             customer = priority_list[0]
-                            #print("next group of",customer.number_of_people,"from the priority list")      
+   
                             # add the next available table next to the assigned table                            
                             customer.tableNumber.append(temp.tableNumber)
                             customer.waiting_time += time_step
                             customer.state = "Order"
-                            #print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+
                             #list_of_customers.append(customer)
                             list_of_tables[i][j].state= "Occupied"            
                             try:
@@ -1023,7 +1021,7 @@ def operations_option_2():
                                     #If there are no available tables
                                     #Move the customer to the priority list
                                     if is_table_available == False:
-                                        #print("move customer party of", customer.number_of_people, "to priority list and reserve a table")
+                                        
                                         priority_list.append(customer)
                                         list_of_customers.append(customer)
                                         #list_of_people_in_line.remove(customer)
@@ -1031,7 +1029,7 @@ def operations_option_2():
                                     #Move customer to one of the available tables
                                     else:
                                         pass
-                                        #print("big group of",customer.number_of_people,"to tables", customer.tableNumber)
+                             
         #Customer will order food                                                                                       
         order_food()
         
